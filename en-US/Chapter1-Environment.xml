@@ -22,9 +22,8 @@ these areas is likely to affect others.
 		</para>
 		<para>
 			Increasing code quality by reducing complexity, duplication of code and
-mainaining good readability is a good first step towards security. Many
-security related issues are introducted by accident as result of complicated
-code.
+mainaining good readability is a good first step towards security. All other things 
+being equal, more complex code will have more weaknesses than simpler one.
 		</para>
 		<para>
 			Several gems can help with improving code quality:
@@ -63,7 +62,88 @@ code.
 		<para>
 			Dependencies in form of gems can be another source of vulnerabilities in Ruby applications.
 		</para>
+
+    <section id="sect-Secure_Ruby_Development_Guide-Environment-Section">
+      <title>Outdated Dependencies</title>
+      <para>
+        <ulink url="http://bundler.io/">Bundler</ulink> is the de facto standard for managing Ruby application dependencies. Developer can specify required dependencies and their versions in Gemfile and bundler automatically resolves dependencies and prepares environment for application to run in. Bundler freezes exact versions of dependencies in Gemfile.lock and everytime this file is present, depencency resolution step is skipped and exact versions of gems from Gemfile.lock are installed.
+      </para>
+      <para>
+        Freezing versions of dependencies has a security impact. If a dependency is vulnerable and new version contains the fix, Gemfile.lock has to be updated. Detection of outdated versions of dependencies is something that can be automated and several gems help with this using information provided by <ulink url="https://github.com/rubysec/ruby-advisory-db/">rubysec-db</ulink>.
+      </para>
+      <para>
+        <ulink url="http://www.rubysec.com">Rubysec</ulink> project maintains rubysec-db database of all security advisories related to Ruby libraries. This database covers most of the popular gems and provides data to identify vulnerable and patched versions of dependencies.
+      </para>
+      <para>
+        <ulink url="https://github.com/rubysec/bundler-audit">bundler-audit</ulink> is a gem maintainted by rubysec project that automatically scans Gemfile.lock and reports any unpatched dependencies or insecure sources.
+      </para>
+      <para>
+        <ulink url="https://github.com/appfolio/gemsurance">gemsurance</ulink> also works on top of rubysec-db. Unlike bundler-audit it outputs html report and lists outdated gems as well. Another useful feature is possibility to integrate the check with RSpec and make your tests fail whenever vulnerable dependency is detected.
+      </para>
+      <important>
+        <para>
+          It is highly recommended to set up automated checks for outdated dependencies.
+        </para>
+      </important>
+    </section>
+    <section>
+      <title>Vendoring dependencies</title>
+      <para>
+        Another way of freezing dependencies is checking their source code into vendor folder in application. With bundler this practice becomes obsolete. Another, still valid, usecase is when dependency needs to be slightly modified to suit needs of application.
+      </para>
+      <para>
+        By checking the dependency into the application`s repository, developer takes responsibility of tracking bugs and vulnerabilities and updating vendored gems. However, backporting commits that fix security issues from upstream version will render automatic tools for checking dependencies useless, as they will rely on gem versions, which will not correspond with the vendored code.
+      </para>
+    </section>
+    <section>
+      <title>Gem signing</title>
+      <para>
+        Gem signing is already implemented in rubygems and is based on x509 certificates, even though discussion about future implementation is <ulink url="https://github.com/rubygems-trust/rubygems.org/wiki">ongoing</ulink>. There is no PKI, so user who wants to verify gem`s integrity must explicitly download and trust certificate that was used to sign the gem.
+      </para>
+      <para>
+        Developer can generate his private key and self signed certificate with:
+        <programlisting>
+$ gem cert --build &lt;email address&gt;
+...
+$ chmod 600 gem-private_key.pem gem-public_cert.pem
+        </programlisting>
+      </para>
+      <para>
+        This command will generate self-signed 2048 bit RSA with SHA1 certificate (this  configuration is currently hardcoded) stored in PEM format. 
+      </para>
+      <important>
+        <para>
+          Private key will not be passphrase protected, and it has to be encrypted manually:
+<programlisting language="Bash">
+$ openssl rsa -des3 -in &lt;private key&gt; -out &lt;encrypted private key&gt;
+</programlisting>
+        </para>
+      </important>
+      <para>
+        To sign the gem, following needs to be added to gemspec:
+        <programlisting language="Ruby">
+s.cert_chain = &lt;path to public certificate&gt;
+s.signing_key = &lt;path to private key&gt; if $0 =~ /gem\z/
+        </programlisting>
+      </para>
+      <para>
+        After building the gem, one can verify it has been signed with:
+        <programlisting>
+$ gem spec testgem-1.0.0.gem cert_chain
+...
+$ tar tf testgem-1.0.0.gem
+data.tar.gz
+metadata.gz
+data.tar.gz.sig
+metadata.gz.sig
+        </programlisting>
+      </para>
+    </section>
 	</section>
 
+  <section>
+    <title>Static code analysis with Brakeman</title>
+    <para></para>
+  </section>
 </chapter>
 
