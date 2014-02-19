@@ -102,7 +102,7 @@ being equal, more complex code will have more weaknesses than simpler one.
 
         <important>
           <para>
-            Assuming user verified the certificate  belongs to the developer it says, signature protects integrity of gem as it is distributed and user has mechanism to detect modifications of gem after it was signed.
+            Assuming user verified the certificate  belongs to the developer it says, signature protects integrity of gem as it is distributed and gives user a mechanism to detect modifications of gem after it was signed.
           </para>
           <para>
             However, signatures do not guarantee trustworthiness of gem author.
@@ -197,19 +197,30 @@ $ gem cert --add &lt;certificate&gt;
         </para>
         <para>
           This command will store public certificate to <filename>~/.gem/trust</filename> directory. Name of the certificate will contain hexdigest of the subject of certificate, so if users adds another certificate with the same subject as one of the already trusted ones, original one will be overwritten without notice.
-          <note>
-            <para>
-              To avoid overwriting existing certificate, make sure subject of certificate being added is different from certificates that are already trusted:
-              <programlisting>
+        </para>
+        <para>
+          To avoid overwriting existing certificate, make sure subject of certificate being added is different from certificates that are already trusted:
+          <programlisting>
 $ openssl x509 -text -in &lt;certificate&gt; | grep Subject:
-        Subject: CN=test, DC=example, DC=com
+    Subject: CN=test, DC=example, DC=com
 $ gem cert --list
 ...
-              </programlisting>
-            </para> 
-          </note>
+          </programlisting>
         </para>
+        <para>
+          Bundler supports gem signing and trust policies since version 1.3 and user can specify security policy during installation:
+          <programlisting>
+$ bundle install --trust-policy=HighSecurity
+          </programlisting>
 
+          <warning>
+            <para>Gems that are installed by bundler from repository like
+              <programlisting>
+gem 'jquery-datatables-rails', git: 'git://github.com/rweng/jquery-datatables-rails.git'
+              </programlisting>
+              bypass security policy, as they are not installed using <command>gem</command> command, but cloned into bundler folder.</para>
+          </warning>
+        </para>
         
       </section>
 
@@ -229,6 +240,10 @@ $ gem cert --list
             <listitem>
               <para>
               Documentation of <classname>Gem::Security</classname> module  <ulink url="http://rubygems.rubyforge.org/rubygems-update/Gem/Security.html">http://rubygems.rubyforge.org/rubygems-update/Gem/Security.html</ulink></para>
+            </listitem>
+            <listitem>
+              <para>
+              Ben Smith`s Hacking with gems presentation <ulink url="http://www.youtube.com/watch?v=z-5bO0Q1J9s">http://www.youtube.com/watch?v=z-5bO0Q1J9s</ulink></para>
             </listitem>
           </itemizedlist>
         </para>
