@@ -274,7 +274,7 @@ $ gem install -P MediumSecurity brakeman
     <para>
       To execute scan on application, run brakeman from rails application repository:
       <programlisting>
-$ brakeman -o report.html
+$ brakeman -o report.html --path &lt;path to rails app&gt;
       </programlisting>
     </para>
     <para>
@@ -299,7 +299,37 @@ $ brakeman -o report.html
     </para>
     <section>
       <title>Continuous integration</title>
-      <para></para>
+      <para>
+        Good way to use Brakeman is to integrate it into workflow of a project 
+        and fix the reported problems before they are committed into repository.
+      </para>
+      <para>
+        Creating a rake task is easy with
+        <programlisting>
+$ brakeman --rake
+        </programlisting>
+        which creates file <filename>lib/tasks/brakeman.rake</filename>
+      </para>
+      <para>
+        Another useful options is to create a configuration file from a command
+        line options:
+        <programlisting>
+$ brakeman -C &lt;config file&gt; &lt;options&gt;
+        </programlisting>
+        which can be later used:
+        <programlisting>
+$ brakeman -c &lt;config file&gt;
+        </programlisting>
+      </para>
+      <para>
+        Very useful feature is comparison with older scan result and outputting 
+        only difference between reports - developers can then easily identify 
+        warnings that were just added or fixed:
+        <programlisting>
+$ brakeman --compare &lt;old result in json&gt; -o &lt;output in json&gt;
+        </programlisting>
+        The output is always in json (<command>-f</command> is ignored).
+      </para>
     </section>
     <section>
       <title>Reducing number of false warnings</title>
@@ -321,10 +351,33 @@ $ brakeman -o report.html
       </para>
 
       <para>
-        To reduce the number of false warnings, review and specify methods, that are 
-        safe but would produce a warning:
+        One way to reduce number of warnings is to set minimum confidence level:
         <programlisting>
-  $ brakeman -s 
+$ brakeman -w &lt;level&gt;
+        </programlisting>
+        where level <constant>1</constant> indicates Weak confidence, level
+         <constant>2</constant> Medium and <constant>3</constant> High confidence.
+      </para>
+
+      <para>
+        Another option is to specify list of safe methods:
+        <programlisting>
+$ brakeman -s &lt;comma separated list of methods&gt;
+        </programlisting>
+      </para>
+      <para>
+        This will add methods to the set of known safe methods and certain checks
+        will skip them without producing a warning. For example, Cross site scripting
+        checker maintains a set of methods which produce safe output (it contains
+        methods like <command>escapeHTML</command>) and safe methods specified 
+        as command line argument are added to the list.
+      </para>
+      <para>
+        You can skip processing <filename>lib</filename> directory and/or specify 
+        files to be skipped:
+        <programlisting>
+$ brakeman --skip-libs
+$ brakeman --skip-files &lt;comma separated list of files&gt;
         </programlisting>
       </para>
     </section>
