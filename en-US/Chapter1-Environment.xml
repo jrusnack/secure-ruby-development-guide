@@ -45,7 +45,7 @@ being equal, more complex code will have more weaknesses than simpler one.
       <listitem>
       	<para>
       		<ulink url="https://github.com/metricfu/metric_fu">metric_fu</ulink>
-      		combines several popular code metric tools like Reek, Flog, Flay, Cane etc.
+      		combines several popular code metric tools like <ulink url="https://github.com/troessner/reek">Reek</ulink>, <ulink url="https://github.com/seattlerb/flog">Flog</ulink>, <ulink url="https://github.com/seattlerb/flay">Flay</ulink>, <ulink url="https://github.com/square/cane">Cane</ulink> etc.
       	</para>
       </listitem>
 		</itemizedlist>
@@ -221,12 +221,21 @@ gem 'jquery-datatables-rails', git: 'git://github.com/rweng/jquery-datatables-ra
               bypass security policy, as they are not installed using <command>gem</command> command, but cloned into bundler folder.</para>
           </warning>
         </para>
-        
+        <para>
+          A small gem <command>bundler_signature_check</command> can be used to check <filename>Gemfile</filename> and determine which gems are signed, with suggestion which security policy can be currently safely used (note that <command>bundler_signature_check</command> is signed and it`s dependencies <command>bundler</command> and <command>rake</command> are likely already installed, so <constant>HighSecurity</constant> can be used):
+          <programlisting>
+$ gem install -P HighSecurity bundler_signature_check
+$ bundler_signature_check
+...
+          </programlisting>
+        </para> 
       </section>
 
       <section>
         <title>Certificate chains and signing</title>
-        <para></para>
+        <para>
+
+        </para>
       </section>
         
       <section>
@@ -253,7 +262,73 @@ gem 'jquery-datatables-rails', git: 'git://github.com/rweng/jquery-datatables-ra
 
   <section>
     <title>Static code analysis with Brakeman</title>
-    <para></para>
+    <para>
+      <ulink url="http://brakemanscanner.org">Brakeman</ulink> is a static code scanner for Ruby on Rails applications. It does not require any configuration and can be run out-of-the-box on source of rails application. It performs static code analysis, so it does not require rails application to be set up, but rather parses the source code and looks for common vulnerable patterns.
+    </para>
+    <para>
+      Brakeman gem is signed, but some of its dependencies are not, so to install run:
+      <programlisting>
+$ gem install -P MediumSecurity brakeman
+      </programlisting>
+    </para>
+    <para>
+      To execute scan on application, run brakeman from rails application repository:
+      <programlisting>
+$ brakeman -o report.html
+      </programlisting>
+    </para>
+    <para>
+      The format of the output is determined by file extension or by <command>-f</command> flag. Currently supported formats are <constant>html</constant>,<constant>json</constant>,<constant>tabs</constant>, <constant>csv</constant> and <constant>text</constant>.
+    </para>
+    <para>
+      Brakeman output contains warnings in format
+      <programlisting>
++------------+-----------+---------+--------------------+------------------------------------------+
+| Confidence | Class     | Method  | Warning Type       | Message                                  |
++------------+-----------+---------+--------------------+------------------------------------------+
+| High       | Foo       | bar     | Denial of Service  | Symbol conversion from unsafe String ... |
+      </programlisting>
+    </para>
+    <para>
+      As static code scanner Brakeman does not analyze the behaviour of code when run 
+      and lacks execution context (e.g. it does not know about dead code that`s never
+      executed). Therefore Brakeman output usually contains also false warnings.
+      There are 3 confidence levels to help developers determine possible false 
+      warnings and prioritize when reviewing the output: <constant>High</constant>, 
+      <constant>Medium</constant> and <constant>Weak</constant>.
+    </para>
+    <section>
+      <title>Continuous integration</title>
+      <para></para>
+    </section>
+    <section>
+      <title>Reducing number of false warnings</title>
+      <para>
+        There are several ways to reduce number of false warnings, most of which 
+        can be dangerous. Reducing number of false warnings might be meaningful
+        when Brakeman is adopted by an existing project - in such cases initial
+        report can be overwhelming and ignoring warnings that are likely to be false
+        can be crucial. However, this shall be considered only temporary solution.
+        <important>
+          <para>
+            Reduction of false warnings by skipping certain checks or ignoring
+            certain files is dangerous. Even if all currently reported warnings 
+            are false, future commits might introduce flaws that would otherwise
+            be reported. This greatly reduces effectiveness of Brakeman and its 
+            value for project.
+          </para>
+        </important>
+      </para>
+
+      <para>
+        To reduce the number of false warnings, review and specify methods, that are 
+        safe but would produce a warning:
+        <programlisting>
+  $ brakeman -s 
+        </programlisting>
+      </para>
+    </section>
+    
   </section>
 </chapter>
 
