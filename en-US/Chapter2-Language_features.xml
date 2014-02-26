@@ -7,4 +7,54 @@
   <title>Language features</title>
   <para>
   </para>
+  <section id="sect-Secure_Ruby_Development_Guide-Language_features-SAFE">
+    <title>Tainting and restricted code execution</title>
+    <para>
+      Ruby language includes a security mechanism to handle untrusted objects
+      and restrict arbitrary code execution. This mechanism consists of two parts: first is an automated way of marking objects in Ruby as coming from untrusted source, called tainting. The second part is mechanism for restricting code execution and prevents certain potentially dangerous functions being executed on tainted data. Ruby interpreter can run in several safe levels, each of which defines different restrictions.
+    </para>
+    <para>
+      This mechanism (especially restricted code execution) is implementation 
+      specific and is not part of Ruby specification. Other Ruby implementations such as Rubinius and JRuby do not implement safe levels. However, tainted flag is part of the rubyspec 
+    </para>
+    <section>
+      <title>Object.tainted?</title>
+      <para>
+        Each object in Ruby carries a taint flag which marks it as originating from unsafe source. Additionally, any object derived from tainted object is also tainted. Objects that come from external environment are automatically marked as tainted, which includes command line arguments (<constant>ARGV</constant>), environment variables (<constant>ENV</constant>), data read from files, sockets or other streams. Environment variable <constant>PATH</constant> is exception: it is tainted only if it contains a world-writable directory.
+      </para>
+      <para>
+        To check whether object is tainted and change taintedness of object, use methods <command>Object.tainted?</command>, <command>Object.taint</command> and <command>Object.untaint</command>:
+
+        <programlisting>
+>> input = gets
+exploitable
+=> "exploitable\n"
+>> input.tainted?
+=> true
+>> input.untaint
+=> "exploitable\n"
+>> input.tainted?
+=> false
+        </programlisting>
+      </para>
+    </section>
+    <section>
+      <title>Object.untrusted?</title>
+      <para>
+        At higher safe levels (see safe level 4 below) any code is automatically untrusted and interpreter prevents execution of untrusted code on trusted objects. In Ruby 1.8, taint flag is also used to mark objects as untrusted, so untrusted code is not allowed to modify untainted objects. In addition, any object created by untrusted code is tainted. This effectively allows to sandbox an untrusted code, which will not be allowed to modify "trusted" objects. 
+      </para>
+      <para>
+        Mixing taint and trust of object has serious drawback - untrusted code is allowed to modify all tainted objects (even if they come from trusted code).
+      </para>
+      <para>
+        Ruby 1.9 adds another flag to each object to mark it as untrusted. Untrusted code is now allowed only to modify untrusted objects (ignoring taint flag), and objects created by untrusted code are automatically marked as untrusted and tainted. To check and modify trust flag use methods <command>Object.untrusted?</command>, <command>Object.untrust</command> and <command>Object.trust</command>.
+      </para>
+    </section>
+    <section>
+      <title>$SAFE</title>
+      <para>
+
+      </para>
+    </section>
+  </section>
 </chapter>

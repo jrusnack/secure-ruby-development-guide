@@ -63,7 +63,7 @@ being equal, more complex code will have more weaknesses than simpler one.
 			Dependencies in form of gems can be another source of vulnerabilities in Ruby applications.
 		</para>
 
-    <section id="sect-Secure_Ruby_Development_Guide-Environment-Section">
+    <section id="sect-Secure_Ruby_Development_Guide-Environment-Outdated_Dependencies">
       <title>Outdated Dependencies</title>
       <para>
         <ulink url="http://bundler.io/">Bundler</ulink> is the de facto standard for managing Ruby application dependencies. Developer can specify required dependencies and their versions in Gemfile and bundler automatically resolves dependencies and prepares environment for application to run in. Bundler freezes exact versions of dependencies in Gemfile.lock and everytime this file is present, depencency resolution step is skipped and exact versions of gems from Gemfile.lock are installed.
