@@ -7,7 +7,7 @@
   <title>Language features</title>
   <para>
   </para>
-  <section id="sect-Secure_Ruby_Development_Guide-Language_features-SAFE">
+  <section>
     <title>Tainting and restricted code execution</title>
     <para>
       Ruby language includes a security mechanism to handle untrusted objects
@@ -15,7 +15,7 @@
     </para>
     <para>
       This mechanism (especially restricted code execution) is implementation 
-      specific and is not part of Ruby specification. Other Ruby implementations such as Rubinius and JRuby do not implement safe levels. However, tainted flag is part of the rubyspec 
+      specific and is not part of Ruby specification. Other Ruby implementations such as Rubinius and JRuby do not implement safe levels. However, taint flag is part of the rubyspec.
     </para>
     <section>
       <title>Object.tainted?</title>
@@ -36,6 +36,11 @@ exploitable
 >> input.tainted?
 => false
         </programlisting>
+        <note>
+          <para>
+            Literals (such as numbers or symbols) are exception: they do not carry taint flag and are always untainted.
+          </para>
+        </note>
       </para>
     </section>
     <section>
@@ -49,12 +54,99 @@ exploitable
       <para>
         Ruby 1.9 adds another flag to each object to mark it as untrusted. Untrusted code is now allowed only to modify untrusted objects (ignoring taint flag), and objects created by untrusted code are automatically marked as untrusted and tainted. To check and modify trust flag use methods <command>Object.untrusted?</command>, <command>Object.untrust</command> and <command>Object.trust</command>.
       </para>
+      <para>
+        However, Ruby 2.1 deprecates trust flag and the behaviour of above methods is the same as <command>Object.tainted?</command>, <command>Object.taint</command> and <command>Object.untaint</command>. This change comes together with removal of safe level 4, which makes trust flag useless (see <ulink url="https://bugs.ruby-lang.org/issues/8468">issue on ruby-lang</ulink> or read below).
+      </para>
     </section>
     <section>
       <title>$SAFE</title>
       <para>
-
+        Ruby interpreter can run in restricted execution mode with several levels of checking, controlled by global variable <constant>$SAFE</constant>. There are 5 possible levels: 0,1,2,3,4 with 0 being default safe level. <constant>$SAFE</constant> is thread-local and its value can only be increased (at least in theory - in practice there are well known ways how to work around restricted code execution or decrease a safe level. See section <xref linkend='SAFE-security' endterm="SAFE-security.title"/>). Safe level can be changed by assigning to <constant>$SAFE</constant> or with <command>-T&lt;level&gt;</command> argument.
       </para>
+    
+      <para>Safe levels have following restrictions:
+        <variablelist>
+          <varlistentry>
+            <term>
+              level 0
+            </term>
+            <listitem>
+              <para>strings from streams/environment/ARGV are tainted (default)</para>
+            </listitem>
+          </varlistentry>
+
+          <varlistentry>
+            <term>
+              level 1
+            </term>
+            <listitem>
+              <para>dangerous operations on tainted values are forbidden (such as <command>eval</command>, <command>require</command> etc.)</para>
+            </listitem>
+          </varlistentry>
+
+          <varlistentry>
+            <term>
+              level 2
+            </term>
+            <listitem>
+              <para>adds to the level 1 also restrictions on directory, file and process operations</para>
+            </listitem>
+          </varlistentry>
+
+          <varlistentry>
+            <term>
+              level 3
+            </term>
+            <listitem>
+              <para>in addition all created objects are tainted and untrusted</para>
+            </listitem>
+          </varlistentry>
+
+          <varlistentry>
+            <term>
+              level 4
+            </term>
+            <listitem>
+              <para>code running in this level cannot change trusted objects, direct output is also restricted. This safe level <ulink url="https://bugs.ruby-lang.org/issues/8468">is deprecated</ulink> since Ruby 2.1</para>
+            </listitem>
+          </varlistentry>
+        </variablelist>
+      </para>
+      <para>
+        There is a lack of documentation of what is restricted in each safe level. For more exhausting description refer to <ulink url="http://ruby-doc.com/docs/ProgrammingRuby/">Programming Ruby: Pragmatic programmer`s guide</ulink>.
+      </para>
+      <section id='SAFE-security'>
+        <title id='SAFE-security.title'>Security considerations of $SAFE</title>
+        <para>
+          Design of restricted code execution based on <constant>$SAFE</constant> is inherently flawed. Blacklist approach is used to restrict operation on each level, which means any missed function creates a vulnerability. In past several security updates were related to restricted code execution and taint flag (see CVE-2005-2337, CVE-2006-3694, <ulink url="https://www.ruby-lang.org/en/news/2008/08/08/multiple-vulnerabilities-in-ruby/">CVE-2008-3655</ulink>, <ulink url="https://www.ruby-lang.org/en/news/2008/08/08/multiple-vulnerabilities-in-ruby/">CVE-2008-3657</ulink> and <ulink url="https://www.ruby-lang.org/en/news/2013/05/14/taint-bypass-dl-fiddle-cve-2013-2065/">CVE-2013-2065</ulink>). 
+        </para>
+
+        <warning>
+          <para>
+            Design of restricted code execution based on <constant>$SAFE</constant> is inherently flawed and cannot be used to run untrusted code even at the highest safe level. It must not be used as mechanism to create a secure sandbox, as attacker will be able to work around the restrictions or decrease safe level.
+          </para>
+        </warning>
+      </section>
     </section>
+  </section>
+
+  <section>
+    <title>Serialization in Ruby</title>
+    <para></para>
+  </section>
+
+  <section>
+    <title>Symbols</title>
+    <para></para>
+  </section>
+
+  <section>
+    <title>Object.send</title>
+    <para></para>
+  </section>
+
+  <section>
+    <title>Certificate store in Ruby</title>
+    <para></para>
   </section>
 </chapter>
