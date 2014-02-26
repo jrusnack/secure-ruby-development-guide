@@ -126,6 +126,9 @@ exploitable
             Design of restricted code execution based on <constant>$SAFE</constant> is inherently flawed and cannot be used to run untrusted code even at the highest safe level. It must not be used as mechanism to create a secure sandbox, as attacker will be able to work around the restrictions or decrease safe level.
           </para>
         </warning>
+        <para>
+          Running application with higher safe level is still useful for catching unintended programming errors, such as executing <command>eval</command> on tainted string. 
+        </para>
       </section>
     </section>
   </section>
@@ -137,7 +140,18 @@ exploitable
 
   <section>
     <title>Symbols</title>
-    <para></para>
+    <para>Symbols in MRI Ruby are used for method, variable and constant lookup. They are implemented as integers so that they are faster to look up in hastables. Once symbol is created, memory allocated for it is never freed. This creates opportunity for attacker: if he is able to create arbitrary symbols, he could flood the application with unique symbols that will never be garbage collected. Memory consumption of Ruby process would only grow until it runs out of memory, resulting in Denial of Service attack.</para>
+    <para>
+      Application developers should be careful when calling <command>to_sym</command> or <command>intern</command> on user-supplied strings. Additionally, other methods may convert supplied arguments to symbols internally, for example <command>Object.send</command>, <command>Object.instance_variable_set</command>, <command>Object.instance_variable_get</command>, <command>Module.const_get</command> or <command>Module.const_set</command>:
+      <programlisting>
+>> Symbol.all_symbols.size
+=> 2956
+>> Symbol.const_set("MYSYMBOL", 1)
+=> 1
+>> Symbol.all_symbols.size
+=> 2957
+      </programlisting>
+    </para>
   </section>
 
   <section>
