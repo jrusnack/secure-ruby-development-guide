@@ -135,7 +135,9 @@ exploitable
 
   <section>
     <title>Serialization in Ruby</title>
-    <para></para>
+    <para>
+
+    </para>
   </section>
 
   <section>
@@ -156,7 +158,21 @@ exploitable
 
   <section>
     <title>Object.send</title>
-    <para></para>
+    <para>
+      <command>Object.send</command> allows to invoke any method on object, including private methods. Some methods in Ruby like <command>eval</command> or <command>exit!</command> are private methods of <constant>Object</constant> and can be invoked using <command>send</command>. Note that using <command>Object.public_send</command> does not prevent attacker from executing only private methods:
+      <programlisting>
+>> Object.private_methods.include?(:eval)
+=> true
+>> Object.private_methods.include?(:exit)
+=> true
+>> Object.send("eval","1+1")
+=> 2
+>> Object.public_send("send","eval","1+1")
+=> 2
+>> Object.public_send("send","exit!")
+# exited
+      </programlisting>
+    </para>
   </section>
 
   <section>
