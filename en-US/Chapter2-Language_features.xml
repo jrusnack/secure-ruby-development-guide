@@ -136,8 +136,34 @@ exploitable
   <section>
     <title>Serialization in Ruby</title>
     <para>
-
+      Deserialization of untrusted data has been on the top of critical vulnerabilities in 2013 (prominent examples are deserialization issues found in Ruby on Rails, see <ulink url="https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2013-0156">CVE-2013-0156</ulink>, <ulink url="https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2013-0277">CVE-2013-0277</ulink> or <ulink url="https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2013-0333">CVE-2013-0333</ulink>). There are several ways  how to serialize objects in Ruby:
     </para>
+     <section>
+        <title>Marshal.load</title>
+        <para>
+          <command>Marshal.dump</command> and <command>Marshal.load</command> can serialize and deserialize most of the classes in Ruby. If application deserializes data from untrusted source, attacker can abuse this to execute arbitrary code. Therefore, this method is not suitable most of the time and should never be be used on data from unstrusted source.
+        </para>
+      </section>
+
+      <section>
+        <title>YAML.load</title>
+        <para>
+          YAML is a popular serialization format among Ruby developers. Just like <command>Marshal.load</command> it can be used to deserialize most of the Ruby classes and also should never be used on untrusted data.
+        </para>
+
+        <para>
+          Alternative approach is taken by <ulink url="http://danieltao.com/safe_yaml/">SafeYAML</ulink> gem - by default it allows deserialization of only few types of objects that can be considered safe, such as <constant>Hash</constant>, <constant>Array</constant>, <constant>String</constant> etc. When application requires serialization of certain types, developer can explicitly whitelist trusted types of objects:
+          <programlisting>
+SafeYAML.whitelist!(FrobDispenser, GobbleFactory)
+          </programlisting>
+          This approach is more versatile, since it disables serialization of unsafe classes, yet allows developer to serialize know benign object. Requiring <constant>safe_yaml</constant> will patch method <command>YAML.load</command>.
+        </para>
+      </section>
+
+      <section>
+        <title>JSON.load</title>
+        <para></para>
+      </section>
   </section>
 
   <section>
@@ -153,6 +179,27 @@ exploitable
 >> Symbol.all_symbols.size
 => 2957
       </programlisting>
+    </para>
+  </section>
+
+  <section>
+    <title>Regular expressions</title>
+    <para>
+      A common gotcha in Ruby regular expressions relates to anchors marking the begninning and the end of a string. Specifically, <constant>^</constant> and <constant>$</constant> refer to the beginning and the end of a line, rather then a string. If regular expression like <command>/^[a-z]+$</command> is used to whitelist user input, attacker can bypass it by including newline. To match the beginning and the end of a string use anchors <command>\A</command> and <command>\z</command>. 
+      <programlisting>
+>> puts 'Bang!' if /^my$/ =~ "my\n exploit=123"
+Bang!
+=> nil
+>> puts 'Bang!' if /\Amy\z/ =~ "my\n exploit=123"
+=> nil
+      </programlisting>
+    </para>
+  </section>
+
+  <section>
+    <title>eval</title>
+    <para>
+      Don`t use <command>eval</command>!
     </para>
   </section>
 
