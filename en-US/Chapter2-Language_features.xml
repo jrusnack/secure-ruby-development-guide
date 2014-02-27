@@ -126,9 +126,12 @@ exploitable
             Design of restricted code execution based on <constant>$SAFE</constant> is inherently flawed and cannot be used to run untrusted code even at the highest safe level. It must not be used as mechanism to create a secure sandbox, as attacker will be able to work around the restrictions or decrease safe level.
           </para>
         </warning>
-        <para>
-          Running application with higher safe level is still useful for catching unintended programming errors, such as executing <command>eval</command> on tainted string. 
-        </para>
+
+        <note>
+          <para>
+            However, running application with higher safe level is still useful for catching unintended programming errors, such as executing <command>eval</command> on tainted string. 
+          </para>
+        </note>
       </section>
     </section>
   </section>
@@ -162,7 +165,9 @@ SafeYAML.whitelist!(FrobDispenser, GobbleFactory)
 
       <section>
         <title>JSON.load</title>
-        <para></para>
+        <para>
+          JSON format supports only several primitive data types such as strings, arrays, hashes, numbers etc. This certainly limits the attack surface, but it should not give developer false sense of security - one example is <ulink url="https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2013-0333">CVE-2013-0333</ulink> vulnerability in Ruby on Rails, when parser used for deserialization of JSON data actually converted data to a subset of <constant>YAML</constant> and used <command>YAML.load</command> to deserialize.
+        </para>
       </section>
   </section>
 
