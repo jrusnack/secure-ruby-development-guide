@@ -179,11 +179,14 @@ SafeYAML.whitelist!(FrobDispenser, GobbleFactory)
       <programlisting>
 >> Symbol.all_symbols.size
 => 2956
->> Symbol.const_set("MYSYMBOL", 1)
+>> Module.const_set("MYSYMBOL", 1)
 => 1
 >> Symbol.all_symbols.size
 => 2957
       </programlisting>
+    </para>
+    <para>
+      Array of all currently defined symbols is available through <command>Symbol.all_symbols</command> class method.
     </para>
   </section>
 
@@ -211,24 +214,107 @@ Bang!
   <section>
     <title>Object.send</title>
     <para>
-      <command>Object.send</command> allows to invoke any method on object, including private methods. Some methods in Ruby like <command>eval</command> or <command>exit!</command> are private methods of <constant>Object</constant> and can be invoked using <command>send</command>. Note that using <command>Object.public_send</command> does not prevent attacker from executing only private methods:
+      <command>Object.send</command> is a method with serious security impact, since it invokes any method on object, including private methods. Some methods in Ruby like <command>eval</command> or <command>exit!</command> are private methods of <constant>Object</constant> and can be invoked using <command>send</command>: 
       <programlisting>
 >> Object.private_methods.include?(:eval)
 => true
 >> Object.private_methods.include?(:exit)
 => true
->> Object.send("eval","1+1")
-=> 2
->> Object.public_send("send","eval","1+1")
-=> 2
->> Object.public_send("send","exit!")
-# exited
+>> Object.send('eval', "system 'uname'")
+Linux
+=> true
       </programlisting>
+    </para>
+    <para>
+      Alternative is <command>Object.public_send</command>, which by definition only invokes public methods on object. However, this does not prevent attacker from executing only private methods, since <command>Object.send</command> itself is (and has to be) public:
+      <programlisting>
+>> Object.public_send("send","eval","system 'uname'")
+Linux
+=> true
+>> Object.public_send("send","exit!")     # exits
+      </programlisting>
+    </para>
+    <para>
+
     </para>
   </section>
 
   <section>
-    <title>Certificate store in Ruby</title>
-    <para></para>
+    <title>SSL in Ruby</title>
+    <para>
+      Ruby uses OpenSSL implementation of common cryptographic primitives, which are accessible through <constant>OpenSSL</constant> module included in standard library. This module is then used by other parts of standard library to manage SSL, including <constant>Net::HTTP</constant>, <constant>Net::POP</constant>, <constant>Net::IMAP</constant>, <constant>Net::SMTP</constant> and others.
+    </para>
+
+    <para>
+      SSL connection can be created using OpenSSL module directly:
+      <programlisting language="Ruby">
+>> require 'openssl'
+=> true
+>> require 'socket'
+=> true
+>> tcp_client = TCPSocket.new 'redhat.com', 443
+=> #&lt;TCPSocket:fd 5&gt;
+>> ssl_context = OpenSSL::SSL::SSLContext.new
+=> #&lt;OpenSSL::SSL::SSLContext:0x00000000fcf918&gt;
+>> ssl_context.set_params
+=> {:ssl_version=>"SSLv23", :verify_mode=>1, :ciphers=>"ALL:!ADH:!EXPORT:!SSLv2:RC4+RSA:+HIGH:+MEDIUM:+LOW", :options=>-2147480585}
+>> ssl_client = OpenSSL::SSL::SSLSocket.new tcp_client, ssl_context
+=> #&lt;OpenSSL::SSL::SSLSocket:0x0000000106a418&gt;
+>> ssl_client.connect
+=> #&lt;OpenSSL::SSL::SSLSocket:0x0000000106a418&gt;
+      </programlisting>
+      Note the call to <command>ssl_context.set_params</command>: by default, when context is created, all its instance variables are nil. Before using the context, <command>set_params</command> should be called to initialize them (when called without argument, default parameters are chosen). In case this call is omitted and variables are left uninitialized, certificate verification is not performed. Default parameters are stored as constant:
+      <programlisting language="Ruby">
+>> OpenSSL::SSL::SSLContext::DEFAULT_PARAMS
+=> {:ssl_version=>"SSLv23", :verify_mode=>1, :ciphers=>"ALL:!ADH:!EXPORT:!SSLv2:RC4+RSA:+HIGH:+MEDIUM:+LOW", :options=>-2147480585}
+      </programlisting>
+      One of the side effects of <command>set_params</command> is that it also sets up certificate store with default path (see below):
+      <programlisting language="Ruby">
+>> ssl_context.cert_store
+=> nil
+>> ssl_context.set_params
+=> {:ssl_version=>"SSLv23", :verify_mode=>1, :ciphers=>"ALL:!ADH:!EXPORT:!SSLv2:RC4+RSA:+HIGH:+MEDIUM:+LOW", :options=>-2147480585}
+>> ssl_context.cert_store
+=> #&lt;OpenSSL::X509::Store:0x00000000fea740&gt;
+      </programlisting>
+    </para>
+    <section>
+      <title>Certificate store</title>
+      <para>
+        Class <command>OpenSSL::X509::Store</command> implements certificate store in Ruby. Certificate store is similar to store in web browsers - it contains trusted certificates that can be used to verify certificate chain. When new certificate store is created, it contains no trusted certificates by default.
+      </para>
+      <para>
+        To populate certificate store with certificates, use one of methods:
+        <itemizedlist>
+          <listitem>
+            <para>
+              <command>Store#add_file</command> takes a path to DER/PEM encoded certificate
+            </para>
+          </listitem>
+          <listitem>
+            <para>
+              <command>Store#add_cert</command> takes instance of <constant>X509::Certificate</constant>
+            </para>
+          </listitem>
+          <listitem>
+            <para>
+              <command>Store#add_path</command> takes a path to a directory with trusted certificates
+            </para>
+          </listitem>
+          <listitem>
+            <para>
+              <command>Store#set_default_path</command> adds certificates stored in default certificate area
+            </para>
+          </listitem>
+        </itemizedlist>
+      </para>
+      <para>
+        OpenSSL installation usually creates a directory, which stores several trusted certificates (approach similar to web browsers, that also come with predefined certificate store). To populate certificate store with certificates that come with OpenSSL use <command>Store.set_default_path</command>. The path to default certificate area is defined as:
+        <programlisting language="Ruby">
+>> OpenSSL::X509::DEFAULT_CERT_AREA
+=> "/etc/pki/tls"
+        </programlisting>
+      </para>
+    </section>
   </section>
 </chapter>
