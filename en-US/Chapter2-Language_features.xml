@@ -171,6 +171,26 @@ exploitable
       </itemizedlist>
     </para>
   </section>
+  
+  <section id="RubySymbols">
+    <title>Symbols</title>
+    <para>Symbols in MRI Ruby are used for method, variable and constant lookup. They are implemented as integers so that they are faster to look up in hastables. Once symbol is created, memory allocated for it is never freed. This creates opportunity for attacker: if he is able to create arbitrary symbols, he could flood the application with unique symbols that will never be garbage collected. Memory consumption of Ruby process would only grow until it runs out of memory, resulting in Denial of Service attack.</para>
+    <para>
+      Application developers should be careful when calling <command>to_sym</command> or <command>intern</command> on user-supplied strings. Additionally, other methods may convert supplied arguments to symbols internally, for example <command>Object.send</command>, <command>Object.instance_variable_set</command>, <command>Object.instance_variable_get</command>, <command>Module.const_get</command> or <command>Module.const_set</command>:
+      <programlisting language="Ruby">
+>> Symbol.all_symbols.size
+=> 2956
+>> Module.const_get('MY_SYMBOL')
+NameError: uninitialized constant Module::MY_SYMBOL
+>> Symbol.all_symbols.size
+=> 2957
+      </programlisting>
+    </para>
+    <para>
+      Array of all currently defined symbols is available through <command>Symbol.all_symbols</command> class method.
+    </para>
+  </section>
+
 
   <section>
     <title>Serialization in Ruby</title>
@@ -204,9 +224,53 @@ exploitable
       </section>
 
       <section>
-        <title>JSON.load</title>
+        <title>JSON.parse and JSON.load</title>
         <para>
           JSON format supports only several primitive data types such as strings, arrays, hashes, numbers etc. This certainly limits the attack surface, but it should not give developer false sense of security - one example is <ulink url="https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2013-0333">CVE-2013-0333</ulink> vulnerability in Ruby on Rails, when parser used for deserialization of JSON data actually converted data to a subset of <constant>YAML</constant> and used <command>YAML.load</command> to deserialize.
+        </para>
+
+        <para>
+          However, it is possible to extend Ruby classes to be JSON-dumpable:
+
+          <programlisting language="Ruby">
+class Range
+  def to_json(*a)
+    {
+      'json_class'   => self.class.name,
+      'data'         => [ first, last, exclude_end? ]
+    }.to_json(*a)
+  end
+
+  def self.json_create(o)
+    new(*o['data'])
+  end
+end
+          </programlisting>
+
+          This will allow instances of Range class to be serialized with JSON:
+
+          <programlisting language="Ruby">
+>> (1..10).to_json
+=> "{\"json_class\":\"Range\",\"data\":[1,10,false]}"
+          </programlisting>
+
+          During deserialization, JSON gem will try to look up class referenced by "json_class", which might create new Symbol if the class does not exist, possibly allowing Denial of Service (see <xref linkend='RubySymbols'/>):
+          <programlisting>
+>> Symbol.all_symbols.size
+=> 3179
+>> JSON.parse('{"json_class":"NonexistentClass"}')
+ArgumentError: can't get const NonexistentClass: uninitialized constant NonexistentClass
+>> Symbol.all_symbols.size
+=> 3180
+          </programlisting>
+          To disable this, <constant>:create_additions => false</constant> option can be passed as second argument:
+
+          <programlisting>
+>> JSON.parse('{"json_class":"NonexistentClass"}',:create_additions => false)
+=> {"json_class"=>"NonexistentClass"}
+          </programlisting>
+
+          This behaviour has changed in response to <ulink url="https://www.ruby-lang.org/en/news/2013/02/22/json-dos-cve-2013-0269/">CVE-2013-0269</ulink> and <command>JSON.parse</command> now defaults to <constant>:create_additions => false</constant>. However, default behaviour has not changed for <command>JSON.load</command>, which is dangerous to call on untrusted input.
         </para>
       </section>
       <section>
@@ -296,37 +360,43 @@ def bar(*args)
 end
           </programlisting>
         </para>
+          <section>
+            <title>References</title>
+            <itemizedlist>
+              <listitem>
+                <para>
+                  Aaron Patterson's blog <ulink url="http://tenderlovemaking.com/2013/02/06/yaml-f7u12.html">http://tenderlovemaking.com/2013/02/06/yaml-f7u12.html</ulink>
+                </para>
+              </listitem>
+              <listitem>
+                <para>
+                  Charlie Sommerville's blog <ulink url="https://charlie.bz/blog/rails-3.2.10-remote-code-execution">https://charlie.bz/blog/rails-3.2.10-remote-code-execution</ulink>
+                </para>
+              </listitem>
+              <listitem>
+                <para>
+                  Metasploit's blog <ulink url="https://community.rapid7.com/community/metasploit/blog/2013/01/09/serialization-mischief-in-ruby-land-cve-2013-0156">https://community.rapid7.com/community/metasploit/blog/2013/01/09/serialization-mischief-in-ruby-land-cve-2013-0156</ulink>
+                </para>
+              </listitem>
+              <listitem>
+                <para>
+                  Extending Hash <ulink url="http://www.yaml.org/YAML_for_ruby.html#extending_kernel::hash">http://www.yaml.org/YAML_for_ruby.html#extending_kernel::hash</ulink>
+                </para>
+              </listitem>
+            </itemizedlist>
+          </section>
       </section>
-  </section>
-
-  <section>
-    <title>Symbols</title>
-    <para>Symbols in MRI Ruby are used for method, variable and constant lookup. They are implemented as integers so that they are faster to look up in hastables. Once symbol is created, memory allocated for it is never freed. This creates opportunity for attacker: if he is able to create arbitrary symbols, he could flood the application with unique symbols that will never be garbage collected. Memory consumption of Ruby process would only grow until it runs out of memory, resulting in Denial of Service attack.</para>
-    <para>
-      Application developers should be careful when calling <command>to_sym</command> or <command>intern</command> on user-supplied strings. Additionally, other methods may convert supplied arguments to symbols internally, for example <command>Object.send</command>, <command>Object.instance_variable_set</command>, <command>Object.instance_variable_get</command>, <command>Module.const_get</command> or <command>Module.const_set</command>:
-      <programlisting>
->> Symbol.all_symbols.size
-=> 2956
->> Module.const_set("MYSYMBOL", 1)
-=> 1
->> Symbol.all_symbols.size
-=> 2957
-      </programlisting>
-    </para>
-    <para>
-      Array of all currently defined symbols is available through <command>Symbol.all_symbols</command> class method.
-    </para>
   </section>
 
   <section>
     <title>Regular expressions</title>
     <para>
       A common gotcha in Ruby regular expressions relates to anchors marking the begninning and the end of a string. Specifically, <constant>^</constant> and <constant>$</constant> refer to the beginning and the end of a line, rather then a string. If regular expression like <command>/^[a-z]+$</command> is used to whitelist user input, attacker can bypass it by including newline. To match the beginning and the end of a string use anchors <command>\A</command> and <command>\z</command>. 
-      <programlisting>
->> puts 'Bang!' if /^my$/ =~ "my\n exploit=123"
-Bang!
+      <programlisting language="Ruby">
+>> puts 'Exploited!' if /^benign$/ =~ "benign\n with exploit"
+Exploited!
 => nil
->> puts 'Bang!' if /\Amy\z/ =~ "my\n exploit=123"
+>> puts 'Exploited!' if /\Abenign\z/ =~ "benign\n with exploit"
 => nil
       </programlisting>
     </para>
@@ -338,7 +408,7 @@ Bang!
     <title>Object.send</title>
     <para>
       <command>Object.send</command> is a method with serious security impact, since it invokes any method on object, including private methods. Some methods in Ruby like <command>eval</command> or <command>exit!</command> are private methods of <constant>Object</constant> and can be invoked using <command>send</command>: 
-      <programlisting>
+      <programlisting language="Ruby">
 >> Object.private_methods.include?(:eval)
 => true
 >> Object.private_methods.include?(:exit)
@@ -350,7 +420,7 @@ Linux
     </para>
     <para>
       Alternative is <command>Object.public_send</command>, which by definition only invokes public methods on object. However, this does not prevent attacker from executing only private methods, since <command>Object.send</command> itself is (and has to be) public:
-      <programlisting>
+      <programlisting language="Ruby">
 >> Object.public_send("send","eval","system 'uname'")
 Linux
 => true
@@ -358,7 +428,7 @@ Linux
       </programlisting>
     </para>
     <para>
-
+      Developers should be careful when invoking <command>send</command> and <command>public_send</command> with user controlled arguments.
     </para>
   </section>
 

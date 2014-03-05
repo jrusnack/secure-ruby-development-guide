@@ -98,7 +98,7 @@ being equal, more complex code will have more weaknesses than simpler one.
     <section>
       <title>Gem signing</title>
       <para>
-        Gem signing is already implemented in rubygems and is based on x509 certificates, even though discussion about future implementation is <ulink url="https://github.com/rubygems-trust/rubygems.org/wiki">ongoing</ulink>. There is no PKI, so user who wants to verify gem`s integrity must explicitly download and trust certificate that was used to sign the gem. Establishing trust in certificate of party user has no prior relationship with over internet can be diffucult and unscalable (certificate chains and signing can alleviate this, see below).
+        Gem signing is already implemented in rubygems and is based on x509 certificates, even though discussion about future implementation is <ulink url="https://github.com/rubygems-trust/rubygems.org/wiki">ongoing</ulink>. There is no PKI, so user who wants to verify gem`s integrity must explicitly download and trust certificate that was used to sign the gem. Establishing trust in certificate of party user has no prior relationship with over internet can be diffucult and unscalable.
 
         <important>
           <para>
@@ -229,13 +229,6 @@ $ bundler_signature_check
 ...
           </programlisting>
         </para> 
-      </section>
-
-      <section>
-        <title>Certificate chains and signing</title>
-        <para>
-
-        </para>
       </section>
         
       <section>
