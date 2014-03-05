@@ -118,7 +118,7 @@ exploitable
       <section id='SAFE-security'>
         <title id='SAFE-security.title'>Security considerations of $SAFE</title>
         <para>
-          Design of restricted code execution based on <constant>$SAFE</constant> is inherently flawed. Blacklist approach is used to restrict operation on each level, which means any missed function creates a vulnerability. In past several security updates were related to restricted code execution and taint flag (see CVE-2005-2337, CVE-2006-3694, <ulink url="https://www.ruby-lang.org/en/news/2008/08/08/multiple-vulnerabilities-in-ruby/">CVE-2008-3655</ulink>, <ulink url="https://www.ruby-lang.org/en/news/2008/08/08/multiple-vulnerabilities-in-ruby/">CVE-2008-3657</ulink> and <ulink url="https://www.ruby-lang.org/en/news/2013/05/14/taint-bypass-dl-fiddle-cve-2013-2065/">CVE-2013-2065</ulink>). 
+          Design of restricted code execution based on <constant>$SAFE</constant> is inherently flawed. Blacklist approach is used to restrict operation on each level, which means any missed function creates a vulnerability. In past several security updates were related to restricted code execution and taint flag (see <ulink url="https://www.ruby-lang.org/en/news/2005/10/03/ruby-vulnerability-in-the-safe-level-settings/">CVE-2005-2337</ulink>, CVE-2006-3694, <ulink url="https://www.ruby-lang.org/en/news/2008/08/08/multiple-vulnerabilities-in-ruby/">CVE-2008-3655</ulink>, <ulink url="https://www.ruby-lang.org/en/news/2008/08/08/multiple-vulnerabilities-in-ruby/">CVE-2008-3657</ulink>, <ulink url="https://www.ruby-lang.org/en/news/2011/02/18/exception-methods-can-bypass-safe/">CVE-2011-1005</ulink>, <ulink url="https://www.ruby-lang.org/en/news/2012/10/12/cve-2012-4464-cve-2012-4466/">CVE-2012-4464</ulink>,<ulink url="https://www.ruby-lang.org/en/news/2012/10/12/cve-2012-4464-cve-2012-4466/">CVE-2012-4466</ulink> and <ulink url="https://www.ruby-lang.org/en/news/2013/05/14/taint-bypass-dl-fiddle-cve-2013-2065/">CVE-2013-2065</ulink>). 
         </para>
 
         <warning>
@@ -126,6 +126,22 @@ exploitable
             Design of restricted code execution based on <constant>$SAFE</constant> is inherently flawed and cannot be used to run untrusted code even at the highest safe level. It must not be used as mechanism to create a secure sandbox, as attacker will be able to work around the restrictions or decrease safe level.
           </para>
         </warning>
+
+        <para>
+          One example of how exploitable the design is comes from <ulink url="https://www.ruby-lang.org/en/news/2013/05/14/taint-bypass-dl-fiddle-cve-2013-2065/">CVE-2013-2065</ulink>:
+
+          <programlisting language="Ruby">
+require 'fiddle'
+
+$SAFE = 1
+input = "uname -rs".taint
+handle = DL.dlopen(nil)
+sys = Fiddle::Function.new(handle['system'], [Fiddle::TYPE_VOIDP], Fiddle::TYPE_INT)
+sys.call DL::CPtr[input].to_i
+          </programlisting>
+
+          Even though safe level 1 should restrict execution of system commands, this can be bypassed using Fiddle library, which is an extension to translate a foreign function interface with Ruby. Exploit above bypasses safe level by passing input to system call as numeric memory offset. Since numbers as literals cannot be tainted, code cannot check taintedness of input.
+        </para>
 
         <note>
           <para>
@@ -171,7 +187,7 @@ exploitable
       </itemizedlist>
     </para>
   </section>
-  
+
   <section id="RubySymbols">
     <title>Symbols</title>
     <para>Symbols in MRI Ruby are used for method, variable and constant lookup. They are implemented as integers so that they are faster to look up in hastables. Once symbol is created, memory allocated for it is never freed. This creates opportunity for attacker: if he is able to create arbitrary symbols, he could flood the application with unique symbols that will never be garbage collected. Memory consumption of Ruby process would only grow until it runs out of memory, resulting in Denial of Service attack.</para>
