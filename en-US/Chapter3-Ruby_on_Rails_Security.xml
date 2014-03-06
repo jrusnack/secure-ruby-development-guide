@@ -4,6 +4,97 @@
 %BOOK_ENTITIES;
 ]>
 <chapter>
-  <title>Ruby on Rails Security</title>
-  <para></para>
+  <title>Web Application Security</title>
+  <para>
+    Web application development is one of the most popular usages of Ruby language thanks to the popularity of Ruby on Rails. Following chapter is dedicated to security of web applications with most of the content being framework-independent, while examples and implmentation specific problems are targeted to Ruby on Rails.
+  </para>
+
+  <para>
+    Ruby on Rails as a popular web framework already helps with a web application security by providing secure defaults, useful helper methods, automatic html escaping etc. 
+  </para>
+
+  <section>
+    <title>Authentication and session management</title>
+    <para>
+      
+    </para>
+  </section>
+
+  <section>
+    <title>Authorization and user management</title>
+    <para>
+      
+    </para>
+  </section>
+
+  <section>
+    <title>Common attacks and mitigations</title>
+    <section>
+      <title>Cross site scripting (XSS)</title>
+      <para></para>
+    </section>
+
+    <section>
+      <title>Cross site request forgery (CSRF)</title>
+      <para></para>
+    </section>
+
+    <section>
+      <title>SQL injection attack</title>
+      <para></para>
+    </section>
+
+    <section>
+      <title>LDAP injection attack</title>
+      <para></para>
+    </section>
+
+    <section>
+      <title>Cross site tracing (XST)</title>
+      <para></para>
+    </section>
+
+    <section>
+      <title>Guidelines and principles</title>
+      <para></para>
+    </section>
+  </section>
+
+  <section>
+    <title>Client-side security</title>
+    <section>
+      <title>Same origin policy</title>
+      <para></para>
+    </section>
+
+    <section>
+      <title>Bypassing same origin policy</title>
+      <para></para>
+    </section>
+
+    <section>
+      <title>Security related HTTP headers</title>
+      <para></para>
+    </section>
+  </section>
+
+  <section>
+    <title>Application and server configuration and hardening</title>
+    <section>
+      <title>Logging</title>
+      <para></para>
+    </section>
+
+    <section>
+      <title>User content storage</title>
+      <para></para>
+    </section>
+
+    <section>
+      <title>Storing passwords securely</title>
+      <para></para>
+    </section>
+  </section>
+
+
 </chapter>
