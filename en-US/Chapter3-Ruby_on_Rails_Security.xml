@@ -64,7 +64,74 @@
     <title>Client-side security</title>
     <section>
       <title>Same origin policy</title>
-      <para></para>
+      <para>
+        One of the most important concepts of web applications is same origin policy. It is a protection mechanism implemented by modern web browsers that isolates web applications from each other on the client side. This isolation is performed on domain names under the assumption that content from different domains comes from different entities. In theory, this means every domain has its own trust domain and interaction across domains is restricted. In practice, there are multiple ways of bypassing this mechanism, malicious ones often creating confused deputy problem where client`s browser is tricked into submitting attacker-specified request under his authority.
+      </para>
+
+      <para>
+        Same origin policy prevents Javascript and other scripting languages to access DOM across domains. In addition it also applies to XmlHTTPRequest Javascript API provided by browsers and prohibits page of sending XHR requests against different domains. On the downside, actual implementation by different browsers may vary in important details. Since the actual behaviour depends on implementation in each browser, each vendor usually implements some exceptions intended to help web developers, which reduce the reliability of this mechanism.
+      </para>
+
+      <para>
+        <variablelist>
+          <varlistentry>
+            <term>Same origin policy</term>
+            <listitem>
+              <para>Two pages share the same origin if the protocol, hostname and port are the same for both.</para>
+            </listitem>
+          </varlistentry>
+        </variablelist>
+      </para>
+      <para>
+        Following is a table with outcome of same origin policy check against URL http://web.company.com/~user1
+      </para>
+      <para>
+
+        <table frame='all'>
+          <title>Sample CALS Table</title>
+          <tgroup cols='3' align='left' colsep='1' rowsep='1'>
+            <thead>
+              <row><entry>URL</entry><entry>Outcome</entry><entry>Reason</entry></row>
+            </thead>
+            <tbody>
+              <row><entry>http://web.company.com/~user2</entry><entry>Success</entry><entry></entry></row>
+              <row><entry>https://web.company.com/~user1</entry><entry>Fail</entry><entry>Different protocol</entry></row>
+              <row><entry>http://store.company.com/~user1</entry><entry>Fail</entry><entry>Different hostname</entry></row>
+              <row><entry>https://web.company.com:81/~user1</entry><entry>Fail</entry><entry>Different port</entry></row>
+            </tbody>
+            </tgroup>
+        </table>
+      </para>
+
+      <para>
+        As the example above shows, if a company servers webpages of users from the same domain web.company.com, then pages of individual users are not restricted by same origin policy when accessing each other, as they are coming from the same domain.
+      </para>
+
+      <section>
+        <title>Setting document.domain</title>
+        <para>
+          A page can also define its origin by setting <code>document.domain</code> property to a fully-qualified suffix of the current hostname. When two pages have defined the same <code>document.domain</code>, same origin policy is not applied. However, <code>document.domain</code> has to be specified mutually - it is not enough for just one page to specify its <code>document.domain</code>. Also, when <code>document.domain</code> property is set, port is set to null, while still being checked. This means company.com:8080 cannot bypass same origin policy and access company.com by setting <code>document.domain = "company.com"</code>, as their ports (null vs 80) differ.
+        </para>
+
+        <para>
+          However, <code>document.domain</code> has several issues:
+          <itemizedlist>
+            <listitem>
+              <para>When web.company.com and storage.company.com need to share resources and set <code>document.domain = company.com</code>, any subdomain can set its <code>document.domain</code> and access both of them, even though this access was not intended to be permitted.</para>
+            </listitem>
+            <listitem>
+              <para>
+                When this mechanism cannot be used, cross-domain requests are forbidden even for legitimate use, which creates problem for websites that use multiple (sub)domains.
+              </para>
+            </listitem>
+          </itemizedlist>
+        </para>
+      </section>
+
+      <section>
+        <title></title>
+        <para></para>
+      </section>
     </section>
 
     <section>
