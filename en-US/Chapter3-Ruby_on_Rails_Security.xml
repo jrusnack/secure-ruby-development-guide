@@ -69,7 +69,7 @@
       </para>
 
       <para>
-        Same origin policy prevents Javascript and other scripting languages to access DOM across domains. In addition it also applies to XmlHTTPRequest Javascript API provided by browsers and prohibits page of sending XHR requests against different domains. On the downside, actual implementation by different browsers may vary in important details. Since the actual behaviour depends on implementation in each browser, each vendor usually implements some exceptions intended to help web developers, which reduce the reliability of this mechanism.
+        Same origin policy prevents Javascript and other scripting languages to access DOM across domains. In addition it also applies to XMLHttpRequest Javascript API provided by browsers and prohibits page of sending XMLHttpRequest requests against different domains. On the downside, actual implementation by different browsers may vary in important details. Since the actual behaviour depends on implementation in each browser, each vendor usually implements some exceptions intended to help web developers, which reduce the reliability of this mechanism.
       </para>
 
       <para>
@@ -107,6 +107,10 @@
         As the example above shows, if a company servers webpages of users from the same domain web.company.com, then pages of individual users are not restricted by same origin policy when accessing each other, as they are coming from the same domain.
       </para>
 
+      <para>
+        Browsers treat hostname of server as string literal, which creates another exceptional case: even if IP address of company.com is 10.20.30.40, browser will enforce same origin policy between http://company.com and http://10.20.30.40.
+      </para>
+
       <section>
         <title>Setting document.domain</title>
         <para>
@@ -129,19 +133,174 @@
       </section>
 
       <section>
-        <title></title>
-        <para></para>
+        <title>Unrestricted operations</title>
+        <para>Same Origin Policy restricts Javascript access to DOM and XMLHttpRequest across domains. However, there are multiple operations that are not restricted:
+          <itemizedlist>
+          <listitem>
+            <para>
+              Javascript embedding with <code>&lt;script src=".."&gt;&lt;script&gt;</code>
+            </para>
+          </listitem>
+          <listitem>
+            <para>
+              CSS embedding with <code>&lt;link rel="stylesheet" href="..."&gt;</code>
+            </para>
+          </listitem>
+          <listitem>
+            <para>
+              Anything with <code>&lt;frame&gt;</code> and <code>&lt;iframe&gt;</code>
+            </para>
+          </listitem>
+          <listitem>
+            <para>
+              .. and others
+            </para>
+          </listitem>
+        </itemizedlist>
+
+        </para>
+      </section>
+
+      <section>
+        <title>Additional resources</title>
+        <itemizedlist>
+          <listitem>
+            <para>
+              Browser Security Handbook <ulink url="http://code.google.com/p/browsersec/wiki/Part2">http://code.google.com/p/browsersec/wiki/Part2</ulink>
+            </para>
+          </listitem>
+          <listitem>
+            <para>
+              Same Origin Policy article on Mozilla Developer Network <ulink url="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Same_origin_policy_for_JavaScript">https://developer.mozilla.org/en-US/docs/Web/JavaScript/Same_origin_policy_for_JavaScript</ulink>
+            </para>
+          </listitem>
+        </itemizedlist>
       </section>
     </section>
 
     <section>
       <title>Bypassing same origin policy</title>
-      <para></para>
+      <para>
+        Same Origin Policy as security mechanism leaves a lot to be desired: on one hand, it is not flexible enough to allow web developers use cross-domain resources in several legitimate usecases without exceptions to the rule and workarounds, on the other hand, such exceptions create opportunities for attacker. 
+      </para>
+
+      <para>
+        There are several other mechanisms except <code>document.domain</code> that provide a way to relax Same Origin Policy.
+      </para>
+
+      <section>
+        <title>Cross-origin resource sharing (CORS)</title>
+        <para>
+          Cross-origin resource sharing is a mechanism that allows web application to inform browser, whether cross domain requests against the requested resource are expected.
+        </para>
+
+        <para>
+          Web browsers that conform to the CORS alter their behaviour of handling XMLHttpRequests: instead of denying the cross-domain request immediately, HTTP request is sent with <code>Origin</code> header. Let's assume http://example.com/testpage is making a XMLHttpRequest against http://content.com/wanted_image. Request would contain:
+
+          <programlisting>
+GET /wanted_image HTTP/1.1
+Referrer: http://example.com/testpage
+Origin: http://example.com
+          </programlisting>
+
+          If the server allows sharing of the resource with domain that originated the request, the response would include:
+
+          <programlisting>
+HTTP/1.1 200 OK
+Access-Control-Allow-Origin: http://example.com
+..
+          </programlisting>
+
+          By sending Access-Control-Allow-Origin header, server explicitly tells browser that this cross domain request shall be allowed. Allowed values of Access-Control-Allow-Origin are: * (denoting any domain, effectively marking the resource public) or space separated list of allowed origins. 
+        </para>
+
+        <para>
+          If the resource should not be accessible by the originating domain, server ought not include Access-Control-Allow-Origin header in the response. By default, upon receiving such response from server browser will not pass the response back to the page that originated the request. 
+        </para>
+
+        <para>
+          Several additional considerations:
+          <itemizedlist>
+          <listitem>
+            <para>
+              If the browser is outdated and does not conform to CORS, cross domain request will be denied immediately without sending the request to the server. This means usability of web applications relying on CORS might be restricted on old browsers.
+            </para>
+          </listitem>
+          <listitem>
+            <para>
+              If the web server does not conform to CORS, the Access-Control-Allow-Origin header will not be included in the response and the request will be denied on the client side.
+            </para>
+          </listitem>
+          <listitem>
+            <para>
+              Cross-domain access to resources is enforced on the side of the client. However, since the request includes Origin header, server may also restrict access to resources from other domains (e.g. by returning nothing).
+            </para>
+          </listitem>
+        </itemizedlist>
+        </para>
+      </section>
+
+      <section>
+        <title>Ajax Proxy</title>
+        <para>Add </para>
+      </section>
+
+      <section>
+        <title>JSONP</title>
+        <para>Add </para>
+      </section>
+
+      <section>
+        <title>Additional resources</title>
+        <itemizedlist>
+          <listitem>
+            <para>
+              W3C Recommendation - Cross-Origin Resouce Sharing <ulink url="http://www.w3.org/TR/access-control/">http://www.w3.org/TR/access-control/</ulink>
+            </para>
+          </listitem>
+          <listitem>
+            <para>
+              cross-site xmlhttprequest with CORS <ulink url="http://hacks.mozilla.org/2009/07/cross-site-xmlhttprequest-with-cors/">http://hacks.mozilla.org/2009/07/cross-site-xmlhttprequest-with-cors/</ulink>
+            </para>
+          </listitem>
+          <listitem>
+            <para>
+              Ajax and Mashup Security - Open Ajax Alliance <ulink url="http://www.openajax.org/whitepapers/Ajax%20and%20Mashup%20Security.php">http://www.openajax.org/whitepapers/Ajax%20and%20Mashup%20Security.php</ulink>
+            </para>
+          </listitem>
+        </itemizedlist>
+      </section>
     </section>
 
     <section>
       <title>Security related HTTP headers</title>
-      <para></para>
+      <para>
+
+      </para>
+      <section>
+        <title>X-Frame-Options</title>
+        <para></para>
+      </section>
+      <section>
+        <title>X-XSS-Protection</title>
+        <para></para>
+      </section>
+      <section>
+        <title>X-Content-Type-Options</title>
+        <para></para>
+      </section>
+      <section>
+        <title>X-Content-Security-Policy</title>
+        <para></para>
+      </section>
+      <section>
+        <title>Access-Control-Allow-Origin</title>
+        <para></para>
+      </section>
+      <section>
+        <title>Strict-Transport-Security</title>
+        <para></para>
+      </section>
     </section>
   </section>
 
