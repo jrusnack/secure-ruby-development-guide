@@ -241,11 +241,6 @@ Access-Control-Allow-Origin: http://example.com
       </section>
 
       <section>
-        <title>Ajax Proxy</title>
-        <para>Add </para>
-      </section>
-
-      <section>
         <title>JSON with padding (JSONP)</title>
         <para>
           JSONP is a very common way of hacking around the Same Origin Policy. This mechanism makes use of <code>&lt;script&gt;</code> tag and the fact that embedding Javascript code from other domains is not resctricted by the same origin policy. Since the code references by src attribute of <code>&lt;script&gt;</code> tag is loaded, it can be used as a vehicle to carry data and return them after evaluation.
@@ -281,7 +276,45 @@ parseData({"Key1": "Value1", "Key2": "Value2"})
         </para>
 
         <para>
-          
+          This technique of sharing resources across domains carries bigger security risks than CORS. Since <command>source</command> tag does not fall under Same Origin Policy on the client side, browser sends normal HTTP GET request without <constant>Origin</constant> header. Server that receives request has no means to know that the request was generated on behalf of page from other domain. Since neither the browser nor the server checks this kind of cross-domain requests, last obstacle that prevents exploitation is the fact that returned response is evaluated as Javascript code. 
+        </para>
+
+        <para>
+          Example of this type of vulnerability is <ulink url="https://access.redhat.com/security/cve/CVE-2013-6443">CVE-2013-6443</ulink>. Cloud Forms Manage IQ application has been found vulnerable to cross-domain requests issued using JSONP. UI of application makes heavy use of Javascript and in this particular case changing the tab to "Authentication" would generate this HTTP request through XMLHttpRequest API:
+
+          <programlisting>
+GET /ops/change_tab/?tab_id=settings_authentication&amp;callback=...
+Referrer: ...
+Cookie: ...
+          </programlisting>
+          Response returned by the server would look like this:
+
+          <programlisting>
+HTTP/1.1 200 OK
+....
+
+
+miqButtons('hide');
+Element.replace("ops_tabs", "&lt;div id=\"ops_tabs\" ...");
+          </programlisting>
+          where ops_tabs div contained html code of the Authentication tab including form with hidden CSRF token. To exploit this vulnerability, attacker would patch <command>Element.replace</command> function on his page and issue a JSONP request against CFME server.
+          <programlisting>
+&lt;script src='http://code.jquery.com/jquery-1.10.2.min.js'&gt;&lt;/script&gt;
+&lt;script&gt;
+function test() {
+  $.ajax({
+      url: $( "input[name=url]" ).val() + '/ops/change_tab/?tab_id=settings_authentication',
+      dataType: 'jsonp'
+  });
+};
+
+var Element = { replace: function (a,text) { 
+  ...
+}
+&gt;/script&gt;
+          </programlisting>
+
+          This way attacker can run arbitrary code on returned response from the server: since the request also contains CSRF token, it is easy for attacker to steal it and issue successful CSRF request on behalf of currently logged-in user.
         </para>
       </section>
 
@@ -303,6 +336,11 @@ parseData({"Key1": "Value1", "Key2": "Value2"})
               Ajax and Mashup Security - Open Ajax Alliance <ulink url="http://www.openajax.org/whitepapers/Ajax%20and%20Mashup%20Security.php">http://www.openajax.org/whitepapers/Ajax%20and%20Mashup%20Security.php</ulink>
             </para>
           </listitem>
+          <listitem>
+            <para>
+              CVE-2013-6443 and reproducer by Martin Povolný <ulink url="https://access.redhat.com/security/cve/CVE-2013-6443">https://access.redhat.com/security/cve/CVE-2013-6443</ulink>
+            </para>
+          </listitem>
         </itemizedlist>
       </section>
     </section>
@@ -315,7 +353,7 @@ parseData({"Key1": "Value1", "Key2": "Value2"})
     <section>
       <title>Security related HTTP headers</title>
       <para>
-
+        There are several HTTP headers that increase security of web application in various ways. Below is non-exhaustive list of most important ones, some of which were already mentioned and explained in previous sections: 
       </para>
       <section>
         <title>X-Frame-Options</title>
