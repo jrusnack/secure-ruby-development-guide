@@ -211,7 +211,7 @@ Access-Control-Allow-Origin: http://example.com
 ..
           </programlisting>
 
-          By sending Access-Control-Allow-Origin header, server explicitly tells browser that this cross domain request shall be allowed. Allowed values of Access-Control-Allow-Origin are: * (denoting any domain, effectively marking the resource public) or space separated list of allowed origins. 
+          By sending <constant>Access-Control-Allow-Origin</constant> header, server explicitly tells browser that this cross domain request shall be allowed. Allowed values of <constant>Access-Control-Allow-Origin</constant> are: * (denoting any domain, effectively marking the resource public) or space separated list of allowed origins (in practice, this usually contains just a single domain - one that was specified in Origin header in request). 
         </para>
 
         <para>
@@ -236,8 +236,45 @@ Access-Control-Allow-Origin: http://example.com
               Cross-domain access to resources is enforced on the side of the client. However, since the request includes Origin header, server may also restrict access to resources from other domains (e.g. by returning nothing).
             </para>
           </listitem>
+          <listitem>
+            <para>
+              If the origin of page is unknown (for example webpage is running from a file), browsers will send 
+              <programlisting>
+Origin: null
+              </programlisting>
+            </para>
+          </listitem>
         </itemizedlist>
         </para>
+
+        <section>
+          <title>Using CORS in Rack-based applications</title>
+          <para>
+            CORS support for Rack-based applications is provided by <ulink url="https://github.com/cyu/rack-cors">rack-cors</ulink> gem. After adding it to the applications Gemfile
+            <programlisting>
+gem 'rack-cors', :require => 'rack/cors'
+            </programlisting>
+            and configure Rails by modifying config/application.rb: 
+
+            <programlisting>
+module YourApp
+  class Application &lt; Rails::Application
+
+    # ...
+
+    config.middleware.use Rack::Cors do
+      allow do
+        origins '*'
+        resource '*', :headers => :any, :methods => [:get, :post, :options]
+      end
+    end
+
+  end
+end
+            </programlisting>
+            This configuration permits all origins access to any resource on the server via GET, POST and OPTIONS methods. Customizing the configuration, developer of the application can restrict cross-domain acess to resources by origin, headers and methods.
+          </para>
+        </section>
       </section>
 
       <section>
@@ -353,7 +390,7 @@ var Element = { replace: function (a,text) {
     <section>
       <title>Security related HTTP headers</title>
       <para>
-        There are several HTTP headers that increase security of web application in various ways. Below is non-exhaustive list of most important ones, some of which were already mentioned and explained in previous sections: 
+        There are several HTTP headers that increase security of web application in various ways. Below is non-exhaustive list of most important ones, some of which were already mentioned and explained in previous sections:
       </para>
       <section>
         <title>X-Frame-Options</title>
