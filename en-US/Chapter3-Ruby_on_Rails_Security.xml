@@ -188,7 +188,7 @@
         There are several other mechanisms except <code>document.domain</code> that provide a way to relax Same Origin Policy.
       </para>
 
-      <section>
+      <section id='CORS'>
         <title>Cross-origin resource sharing (CORS)</title>
         <para>
           Cross-origin resource sharing is a mechanism that allows web application to inform browser, whether cross domain requests against the requested resource are expected.
@@ -387,6 +387,72 @@ var Element = { replace: function (a,text) {
       <para></para>
     </section>
 
+    <section id="HSTS">
+      <title>HTTP Strict Transport Security</title>
+      <para>HTTP Strict Transport Security is a mechanism that allows server to inform client that any interactions with the server shall be carried over secure HTTPS connection. </para>
+
+      <para>
+        HTTPS provides a secure tunnel between client and the server, yet there are still ways through which data can leak to the attacker. One of the most practical attacks on SSL is SSL stripping attack introduced by Moxie Marlinspike, in which active network attacker transparently converts HTTPS connection to insecure one. To the client it seems like web application does not support HTTPS and has no means to verify whether this is the case.
+      </para>
+
+      <para>HTTP Strict Transport Security mechanism allows server to inform client's user agent that the web application shall be accessed only through secure HTTPS connection. When client`s UA conformant with HSTS receives such notice from server, it enforces following behaviour:
+
+        <itemizedlist>
+          <listitem>
+            <para>
+              all references to HSTS host are converted into secure ones before dereferencing
+            </para>
+          </listitem>
+          <listitem>
+            <para>
+              connection is terminated upon any and all secure transport errors or warnings without interaction with user
+            </para>
+          </listitem>
+        </itemizedlist>
+      </para>
+      <para>
+        User agents which receive response with HSTS header need to retain data about host enforcing strict transport security for the timespan declared by the host. User agent builds a list of known HSTS hosts and whenever request is sent to known HSTS host, HTTPS is used. 
+      </para>
+
+      <para>
+        HSTS header sent by the server includes timespan during which UA should enforce strict transport security in seconds:
+        <programlisting>
+Strict-Transport-Security: max-age=631138519
+        </programlisting>
+      </para>
+      <para>
+        Optionally, server can also specify that HSTS be enforced on all subdomains:
+        <programlisting>
+Strict-Transport-Security: max-age=631138519; includeSubDomains
+        </programlisting>
+      </para>
+      <para>
+        Setting timespan to zero
+        <programlisting>
+Strict-Transport-Security: max-age=0
+        </programlisting>
+        allows the server to indicate that UA should delete HSTS policy associated with the host.
+      </para>
+
+      <section>
+        <title>Configuring HSTS in Rails</title>
+        <para>
+          A single directive in Rail configuration
+          <programlisting>
+config.force_ssl = true
+          </programlisting>
+          enables HSTS for the application.
+        </para>
+      </section>
+
+      <section>
+        <title>References</title>
+        <para>
+          RFC 6797 <ulink url="http://tools.ietf.org/html/rfc6797">http://tools.ietf.org/html/rfc6797</ulink>
+        </para>
+      </section>
+    </section>
+
     <section>
       <title>Security related HTTP headers</title>
       <para>
@@ -410,11 +476,11 @@ var Element = { replace: function (a,text) {
       </section>
       <section>
         <title>Access-Control-Allow-Origin</title>
-        <para></para>
+        <para>This response header is part of the implemetation of Cross Origin Resource Sharing described in <xref linkend='CORS'/>. Via this header server explicitly tells client`s browser whether cross-domain access to resource shall be permitted for the Origin specified.</para>
       </section>
       <section>
         <title>Strict-Transport-Security</title>
-        <para></para>
+        <para>This header is part of HTTP Strict Transport Security described in <xref linkend='HSTS'/>. Using it server indicates that any requests from client shall be made through secure SSL connection and such policy be enforced for a declared timespan.</para>
       </section>
     </section>
   </section>
