@@ -434,6 +434,10 @@ Strict-Transport-Security: max-age=0
         allows the server to indicate that UA should delete HSTS policy associated with the host.
       </para>
 
+      <para>
+        This header protects client from visiting host he has visited before using unsecure connection, but when the client connects for the first time, he has no prior knowledge about HSTS policy for the host. This theoretically allows attacker to successfully perform attack against user that connect for the first time. To mitigate this, browsers include preloaded list of known HSTS hosts in the default installation.
+      </para>
+
       <section>
         <title>Configuring HSTS in Rails</title>
         <para>
@@ -447,9 +451,17 @@ config.force_ssl = true
 
       <section>
         <title>References</title>
-        <para>
-          RFC 6797 <ulink url="http://tools.ietf.org/html/rfc6797">http://tools.ietf.org/html/rfc6797</ulink>
-        </para>
+        <itemizedlist>
+          <listitem>
+            <para>RFC 6797 <ulink url="http://tools.ietf.org/html/rfc6797">http://tools.ietf.org/html/rfc6797</ulink></para>
+          </listitem>
+          <listitem>
+            <para>Mozilla: Preloading HSTS <ulink url="https://blog.mozilla.org/security/2012/11/01/preloading-hsts/">https://blog.mozilla.org/security/2012/11/01/preloading-hsts/</ulink></para>
+          </listitem>
+          <listitem>
+            <para>Chromium: list of preloaded  known  HSTS  hosts <ulink url="https://src.chromium.org/viewvc/chrome/trunk/src/net/http/transport_security_state_static.json">https://src.chromium.org/viewvc/chrome/trunk/src/net/http/transport_security_state_static.json</ulink></para>
+          </listitem>
+        </itemizedlist>
       </section>
     </section>
 
@@ -460,11 +472,99 @@ config.force_ssl = true
       </para>
       <section>
         <title>X-Frame-Options</title>
-        <para></para>
+        <para>
+          X-Frame-Options header can be used by server to indicate that page returned shall not be rendered inside <command>&lt;frame&gt;</command> and <command>&lt;iframe&gt;</command> tags and sites can use this as a defense from clickjacking attacks.
+        </para>
+        <para>
+
+          <variablelist>
+            <varlistentry>
+              <term>DENY</term>
+              <listitem>
+                <para>Content of the page shall not be displayed in a frame regardless of the origin of the page attempting to do so.</para>
+              </listitem>
+            </varlistentry>
+            <varlistentry>
+              <term>SAMEORIGIN</term>
+              <listitem>
+                <para>Content of the page can be embedded only in a page with the same origin as the page itself.</para>
+              </listitem>
+            </varlistentry>
+            <varlistentry>
+              <term>ALLOW-FROM</term>
+              <listitem>
+                <para>Content of the page can be embedded only in a page with top level origin specified by this option.</para>
+              </listitem>
+            </varlistentry>
+          </variablelist>
+        </para>
+        <para>
+          The header returned from server allowing content to be embedded within https://example.com/ looks like this
+          <programlisting>
+X-Frame-Options: ALLOW-FROM https://example.com/
+          </programlisting>
+        </para>
+        <section>
+          <title>References</title>
+          <itemizedlist>
+            <listitem>
+              <para>RFC 7034 <ulink url="http://tools.ietf.org/html/rfc7034">http://tools.ietf.org/html/rfc7034</ulink></para>
+            </listitem>
+          </itemizedlist>
+        </section>
       </section>
       <section>
         <title>X-XSS-Protection</title>
-        <para></para>
+        <para>
+          Modern browsers usually come with built-in XSS filter, that is enabled by default. Originally IE 8 introduced new XSS filter and this header was created to give web application developers way to turn this feature off in case it breaks functionality of the web application for users. Later this concept was also adpoted by Webkit, which implements its own XSS filter.
+        </para>
+
+        <para>
+          XSS filter does not prevent XSS attacks by blocking malicious scripts, but rather tries to identify untrusted scripts and transform them into benign strings. Heuristics that identify untrusted scripts usually try to match  scripts embedded within request to those included in response. If the script matches, browser assumes the script included in the content is not trusted, as it is most probably not part of the content of the application, but rather included as user-supplied parameter. This means XSS filters are effective only against reflective XSS, not other variants.
+        </para>
+
+        <para>
+          Setting value of the header to 1 should re-enable XSS filter, in case it was disabled by user.
+          <programlisting>
+X-XSS-Protection: 1
+          </programlisting>
+        </para>
+
+        <para>
+          Sanitization of scripts by converting them to benign strings has been source of bugs and security vulnerabilities - sanitization in IE8 XSS filter has been found counterproductive as it actually introduced XSS vulnerabilities in websites that were previously not vulnerable to XSS (including bing.com, google.com, wikipedia.com and others. For details, see whitepaper by Eduardo Vela Nava and David Lindsay <ulink url="http://p42.us/ie8xss/">Abusing Internet Explorer 8's XSS Filters</ulink> ). 
+        </para>
+        <para>
+          To remedy this, extension to the  X-XSS-Protection header was introduced:
+          <programlisting>
+X-XSS-Protection: 1; mode=block
+          </programlisting>
+        </para>
+        <para>
+          With mode set to block browser will outright block any script found untrusted instead of trying to sanitize and display it. 
+        </para>
+        <para>
+
+        </para>
+        <section>
+          <title>References</title>
+          <itemizedlist>
+            <listitem>
+              <para>
+                IE Internals: <ulink url="http://blogs.msdn.com/b/ieinternals/archive/2011/01/31/controlling-the-internet-explorer-xss-filter-with-the-x-xss-protection-http-header.aspx">Controlling XSS Filter</ulink>
+              </para>
+            </listitem>
+            <listitem>
+              <para>
+                IE Blog: <ulink url="http://blogs.msdn.com/b/ie/archive/2008/07/02/ie8-security-part-iv-the-xss-filter.aspx">The XSS Filter</ulink>
+              </para>
+            </listitem>
+            <listitem>
+              <para>
+                Chromium Blog: <ulink url="http://blog.chromium.org/2010/01/security-in-depth-new-security-features.html">Security in Depth: New Security Features</ulink>
+              </para>
+            </listitem>
+          </itemizedlist>
+        </section>
       </section>
       <section>
         <title>X-Content-Type-Options</title>
@@ -476,7 +576,7 @@ config.force_ssl = true
       </section>
       <section>
         <title>Access-Control-Allow-Origin</title>
-        <para>This response header is part of the implemetation of Cross Origin Resource Sharing described in <xref linkend='CORS'/>. Via this header server explicitly tells client`s browser whether cross-domain access to resource shall be permitted for the Origin specified.</para>
+        <para>This response hear is part of the implemetation of Cross Origin Resource Sharing described in <xref linkend='CORS'/>. Via this header server explicitly tells client`s browser whether cross-domain access to resource shall be permitted for the Origin specified.</para>
       </section>
       <section>
         <title>Strict-Transport-Security</title>
