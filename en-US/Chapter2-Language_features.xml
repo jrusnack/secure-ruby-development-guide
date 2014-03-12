@@ -170,7 +170,7 @@ sys.call DL::CPtr[input].to_i
           <para><command>Kernel#require</command>, <command> Kernel#require_relative</command></para>
         </listitem>
         <listitem>
-          <para><command>DL</command> and <command>Fiddle</command> module</para>
+          <para><command>DL</command> and <command>Fiddle</command> modules</para>
         </listitem>
         <listitem>
           <para><command>Object#send</command>, <command>Object#__send__</command> and <command>Object#public_send</command></para>
@@ -246,7 +246,7 @@ NameError: uninitialized constant Module::MY_SYMBOL
         </para>
 
         <para>
-          However, it is possible to extend Ruby classes to be JSON-dumpable:
+          Even though JSON natively supports only primitive types, it is possible to extend Ruby classes to be JSON-dumpable:
 
           <programlisting language="Ruby">
 class Range
@@ -292,7 +292,7 @@ ArgumentError: can't get const NonexistentClass: uninitialized constant Nonexist
       <section>
         <title>Exploiting deserialization vulnerabilities</title>
         <para>
-          To exploit deserialization vulnerability, there must already be a dangerous class loaded in the current namespace. In particular, it contains unsafe <command>init_with()</command> or <command>[]=</command> methods, that get called during deserialization. This might seem like an unlikely event, however, its very likely in case of big projects like Ruby on Rails. 
+          To exploit deserialization vulnerability, there must already be a dangerous class loaded in the current namespace. In particular, it contains unsafe <command>init_with()</command> or <command>[]=</command> methods, that get called during deserialization. This might seem like an unlikely event, however, its possible in case of big projects like Ruby on Rails. 
         </para>
         <para>
           <ulink url="https://groups.google.com/forum/?fromgroups=#!topic/rubyonrails-security/61bkgvnSGTQ">CVE-2013-0156</ulink> vulnerability in Ruby on Rails can be used as an example. A vulnerable class in this case was <constant>ActionDispatch::Routing::RouteSet::NamedRouteCollection</constant>, which contained code like this:

@@ -6,10 +6,10 @@
 <bookinfo id="book-Secure_Ruby_Development_Guide-Secure_Ruby_Development_Guide">
 	<title>Secure Ruby Development Guide</title>
 	<subtitle>Guide to secure software development in Ruby</subtitle>
-	<productname>Documentation</productname>
-	<productnumber>0.1</productnumber>
-	<edition>0</edition>
-	<pubsnumber>0</pubsnumber>
+	<productname>Fedora Security Team</productname>
+	<productnumber></productnumber>
+	<edition>1</edition>
+	<pubsnumber>1</pubsnumber>
 	<abstract>
 		<para>
 			This guide covers security aspects of software development in Ruby.
