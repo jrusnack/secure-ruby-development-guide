@@ -762,7 +762,22 @@ X-XSS-Protection: 1; mode=block
       </section>
       <section>
         <title>X-Content-Type-Options</title>
-        <para></para>
+        <para>
+          To provide better compatibility modern browesers usually come with a content-type sniffing algorithm, which allows them to infer content type of file by inspecting its content. This is useful in cases when HTTP reponse does not include Content-Type header or if its mismatched. By correctly rendering the content and ignoring mismatched MIME type browser gains competitive advantage over other browser who do not render such file correctly. 
+        </para>
+
+        <para>
+          Even though such behaviour enhances user experience, it also has impact on security. Suppose web application allows users to upload and download content and to protect from malicious file types, it implements content type filters that ban possibly dangerous file types. Attacker can upload malicious file with benign <constant>Content-Type</constant> that will pass web applications filters and server will store the file along with declared MIME type. When users download such file, server will include stored type in <constant>Content-Type</constant> header. However, browser's content-type sniffing algorithm will determine the correct type and ignore received <constant>Content-Type</constant> header, making the client vulnerable.
+        </para>
+
+        <para>
+          To prevent browsers from using content-type sniffing, server can include 
+          <programlisting>
+X-Content-Type-Options: nosniff
+          </programlisting>
+
+          header to enforce the type sent in <constant>Content-Type</constant> header.
+        </para>
       </section>
       <section>
         <title>Content-Security-Policy</title>
