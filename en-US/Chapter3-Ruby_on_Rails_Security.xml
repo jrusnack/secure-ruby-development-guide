@@ -382,9 +382,203 @@ var Element = { replace: function (a,text) {
       </section>
     </section>
 
-    <section>
-      <title>Content Security Policy</title>
-      <para></para>
+    <section id="CSP">
+      <title>Content Security Policy (CSP)</title>
+      <para>
+        Content Security policy is a comprehensive web security mechanism that allows web applications to declaratively list all sources of trusted content. Originally developed at Mozilla and later adopted by Webkit, Content Security Policy is now a W3C Candidate Recommendation. 
+      </para>
+      <para>
+        One of the persistent problems in web application security is the lack of distinction between content loaded from trusted sources and potentially malicious content injected or referenced in the web page. Content Security Policy takes a comprehensive approach: a new HTTP header is introduced to allow server to send a whitelist of trusted sources to the client. Conformant user agents follow the policy declared in the header and block content from untrusted sources.
+      </para>
+
+      <para>
+        Several headers are related to Content Security Policy:
+        <itemizedlist>
+          <listitem>
+            <para>
+              <constant>X-Content-Security-Policy:</constant> experimental header originally introduced by Mozilla
+            </para>
+          </listitem>
+          <listitem>
+            <para>
+              <constant>X-WebKit-CSP:</constant> experimental header used in WebKit based browsers
+            </para>
+          </listitem>
+          <listitem>
+            <para>
+              <constant>Content-Security-Policy:</constant> a standard header proposed by W3C, that shall be used as replacement for the two abovementioned experimenal headers. However, older versions of browsers may support only experimental versions of this header, so web application developers that seek the best coverage may want to use all three headers together.
+            </para>
+          </listitem>
+        </itemizedlist>
+      </para>
+
+      <para>
+        Value of the header consists of several directives separated by semicolon, each of them followed by list of sources separated by spaces. Following simple policy declares http://example.com as a trusted sources of scripts and disables all other sources:
+
+        <programlisting>
+Content-Security-Policy: default-src 'none'; script-src http://example.com
+        </programlisting>
+      </para>
+
+      <para>
+        Since CSP uses whitelist approach, loading scripts from any other domain would not be permitted. Suppose webpage contains following:
+
+        <programlisting>
+&lt;script src="http://malicious.com"&gt;&lt;/script&gt;
+        </programlisting>
+
+        In Firefox this would generate following warning:
+        <programlisting>
+[13:16:03.713] CSP WARN:  Directive script-src http://example.com:80 violated by http://malicious.com/
+        </programlisting>
+
+        This approach works in case of content with known origin, but this does not solve problem with inlined scripts such as 
+        <programlisting>
+&lt;script&gt;exploit()&lt;/script&gt;
+        </programlisting>
+        CSP addresses this problem by completely banning execution of any scripts or CSS inlined with <constant>&lt;script&gt;</constant> or JavaScript URI and similar restrictions apply on <constant>eval()</constant> like mechanisms. This is necessary from security standpoint, however, it also means that web application developers who want to adopt CSP need to make sure their application does not make use of banned functions. To mitigate this CSP includes reporting capability via <constant>report-uri</constant> directive, reporting only mode via <constant>Content-Security-Policy-Report-Only</constant> header and ability to disable protection with <constant>'unsafe-inline'</constant> and <constant>'unsafe-eval'</constant> sources (see below).
+      </para>
+
+      <section>
+        <title>Directives and source lists</title>
+        <para>
+          CSP defines several directives that define restricted content types:
+          <itemizedlist>
+            <listitem>
+              <para>
+                <constant>script-src</constant> restricts which scripts the protected resource can execute.
+              </para>
+            </listitem>
+            <listitem>
+              <para>
+                <constant>object-src</constant> restricts from where the protected resource can load plugins.
+              </para>
+            </listitem>
+            <listitem>
+              <para>
+                <constant>style-src</constant> restricts which styles the user applies to the protected resource.
+              </para>
+            </listitem>
+            <listitem>
+              <para>
+                <constant>img-src</constant> restricts from where the protected resource can load images.
+              </para>
+            </listitem>
+            <listitem>
+              <para>
+                <constant>media-src</constant> restricts from where the protected resource can load video and audio.
+              </para>
+            </listitem>
+            <listitem>
+              <para>
+                <constant>frame-src</constant> restricts from where the protected resource can embed frames.
+              </para>
+            </listitem>
+            <listitem>
+              <para>
+                <constant>font-src</constant> restricts from where the protected resource can load fonts.
+              </para>
+            </listitem>
+            <listitem>
+              <para>
+                <constant>connect-src</constant> restricts which URIs the protected resource can load using script interfaces (like XMLHttpRequest).
+              </para>
+            </listitem>
+          </itemizedlist>
+
+          and additional directives that control behaviour of CSP:
+          <itemizedlist>
+            <listitem>
+              <para>
+                <constant>default-src</constant> sets a default source list for all directives except sandbox. If not set, directives that are omitted permit all sources by default.
+              </para>
+            </listitem>
+            <listitem>
+              <para>
+                <constant>sandbox</constant> is an optional directive that specifies an HTML sandbox policy that the user agent applies to the protected resource.
+              </para>
+            </listitem>
+            <listitem>
+              <para>
+                <constant>report-uri</constant> specifies a URI to which the user agent sends reports about policy violation.
+              </para>
+            </listitem>
+          </itemizedlist>
+        </para>
+
+        <para>
+          Source list syntax is fairly flexible: source can be specified from scheme only (https:) and hostname (example.com) to a fully qualified URI (https://example.com:443). Wildcards are also permitted instead of scheme, port or as prefix of domain name to denote arbitrary subdomain (*.example.com). Additionally, there are four keywords allowed in the source list:
+           <itemizedlist>
+            <listitem>
+              <para>
+                <constant>'none'</constant> matches nothing.
+              </para>
+            </listitem>
+            <listitem>
+              <para>
+                <constant>'self'</constant> matches current origin.
+              </para>
+            </listitem>
+            <listitem>
+              <para>
+                <constant>'unsafe-inline'</constant> allows inline JavaScript and CSS and can be used with script-src and style-src directives.
+              </para>
+            </listitem>
+            <listitem>
+              <para>
+                <constant>'unsafe-eval'</constant> allows eval-list mechanisms that convert text to executable script and can be used with script-src directive.
+              </para>
+            </listitem>
+          </itemizedlist>
+        </para>
+
+        <para>
+          <programlisting>
+Content-Security-Policy: default-src 'none'; script-src https://cdn.example.com 'self' 'unsafe-inline'; connect-src https://api.example.com; 
+          </programlisting>
+        </para>
+
+      </section>
+
+      <section>
+        <title>Reporting policy violations</title>
+        <para>
+          Developers who are tuning CSP for their web applications or adopting CSP can use reporting capabilities of CSP. By including <constant>report-uri</constant> directive server can instruct client's user agent to send POST with JSON-formatted violation report to a specified URI. 
+          <programlisting>
+Content-Security-Policy: ...; report-uri /csp_report_parser;
+          </programlisting>
+
+          Reports sent back to server about CSP violation looks like this:
+          <programlisting>
+{
+  "csp-report": {
+    "document-uri": "http://example.org/page.html",
+    "referrer": "http://evil.example.com/haxor.html",
+    "blocked-uri": "http://evil.example.com/image.png",
+    "violated-directive": "default-src 'self'",
+    "original-policy": "default-src 'self'; report-uri http://example.org/csp-report.cgi"
+  }
+}
+          </programlisting>
+
+          When deploying CSP it may be useful to test the policy in the wild before enforcing it. It is possible to achieve this by sending <constant>Content-Security-Policy-Report-Only</constant> header instead - this will indicate that the user agent must monitor any policy violations, but not enforce them. Combined with <constant>report-uri</constant> this gives developers tools to seamlessly deploy new CSP policy. 
+          <programlisting>
+Content-Security-Policy-Report-Only: ...; report-uri /csp_report_parser;
+          </programlisting>
+        </para>
+      </section>
+
+      <section>
+        <title>References</title>
+        <itemizedlist>
+          <listitem>
+            <para>W3C Content Security Policy 1.0 <ulink url="http://www.w3.org/TR/CSP/">http://www.w3.org/TR/CSP/</ulink></para>
+          </listitem>
+          <listitem>
+            <para>HTML5Rocks tutorial <ulink url="http://www.html5rocks.com/en/tutorials/security/content-security-policy/">http://www.html5rocks.com/en/tutorials/security/content-security-policy/</ulink></para>
+          </listitem>
+        </itemizedlist>
+      </section>
     </section>
 
     <section id="HSTS">
@@ -571,18 +765,23 @@ X-XSS-Protection: 1; mode=block
         <para></para>
       </section>
       <section>
-        <title>X-Content-Security-Policy</title>
-        <para></para>
+        <title>Content-Security-Policy</title>
+        <para>This header allows server specify Content Security Policy and enable user agent to block content from untrusted sources - see <xref linkend='CSP'/></para>
       </section>
       <section>
         <title>Access-Control-Allow-Origin</title>
-        <para>This response hear is part of the implemetation of Cross Origin Resource Sharing described in <xref linkend='CORS'/>. Via this header server explicitly tells client`s browser whether cross-domain access to resource shall be permitted for the Origin specified.</para>
+        <para>This response header is part of the implemetation of Cross Origin Resource Sharing described in <xref linkend='CORS'/>. Via this header server explicitly tells client`s browser whether cross-domain access to resource shall be permitted for the Origin specified.</para>
       </section>
       <section>
         <title>Strict-Transport-Security</title>
         <para>This header is part of HTTP Strict Transport Security described in <xref linkend='HSTS'/>. Using it server indicates that any requests from client shall be made through secure SSL connection and such policy be enforced for a declared timespan.</para>
       </section>
     </section>
+  </section>
+
+  <section>
+    <title>Guidelines and recommendations</title>
+    <para></para>
   </section>
 
   <section>
