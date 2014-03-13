@@ -1,0 +1,858 @@
+<?xml version='1.0' encoding='utf-8' ?>
+<!DOCTYPE chapter PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN" "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd" [
+<!ENTITY % BOOK_ENTITIES SYSTEM "Secure_Ruby_Development_Guide.ent">
+%BOOK_ENTITIES;
+]>
+<section>
+  <title>Client-side security</title>
+  <section>
+    <title>Same origin policy</title>
+    <para>
+      One of the most important concepts of web applications is same origin policy. It is a protection mechanism implemented by modern web browsers that isolates web applications from each other on the client side. This isolation is performed on domain names under the assumption that content from different domains comes from different entities. In theory, this means every domain has its own trust domain and interaction across domains is restricted. In practice, there are multiple ways of bypassing this mechanism, malicious ones often creating confused deputy problem where client`s browser is tricked into submitting attacker-specified request under his authority.
+    </para>
+
+    <para>
+      Same origin policy prevents Javascript and other scripting languages to access DOM across domains. In addition it also applies to XMLHttpRequest Javascript API provided by browsers and prohibits page of sending XMLHttpRequest requests against different domains. On the downside, actual implementation by different browsers may vary in important details. Since the actual behaviour depends on implementation in each browser, each vendor usually implements some exceptions intended to help web developers, which reduce the reliability of this mechanism.
+    </para>
+
+    <para>
+      <variablelist>
+        <varlistentry>
+          <term>Same origin policy</term>
+          <listitem>
+            <para>Two pages share the same origin if the protocol, hostname and port are the same for both.</para>
+          </listitem>
+        </varlistentry>
+      </variablelist>
+    </para>
+    <para>
+      Following is a table with outcome of same origin policy check against URL http://web.company.com/~user1
+    </para>
+    <para>
+
+      <table frame='all'>
+        <title>Sample CALS Table</title>
+        <tgroup cols='3' align='left' colsep='1' rowsep='1'>
+          <thead>
+            <row><entry>URL</entry><entry>Outcome</entry><entry>Reason</entry></row>
+          </thead>
+          <tbody>
+            <row><entry>http://web.company.com/~user2</entry><entry>Success</entry><entry></entry></row>
+            <row><entry>https://web.company.com/~user1</entry><entry>Fail</entry><entry>Different protocol</entry></row>
+            <row><entry>http://store.company.com/~user1</entry><entry>Fail</entry><entry>Different hostname</entry></row>
+            <row><entry>https://web.company.com:81/~user1</entry><entry>Fail</entry><entry>Different port</entry></row>
+          </tbody>
+          </tgroup>
+      </table>
+    </para>
+
+    <para>
+      As the example above shows, if a company servers webpages of users from the same domain web.company.com, then pages of individual users are not restricted by same origin policy when accessing each other, as they are coming from the same domain.
+    </para>
+
+    <para>
+      Browsers treat hostname of server as string literal, which creates another exceptional case: even if IP address of company.com is 10.20.30.40, browser will enforce same origin policy between http://company.com and http://10.20.30.40.
+    </para>
+
+    <section>
+      <title>Setting document.domain</title>
+      <para>
+        A page can also define its origin by setting <code>document.domain</code> property to a fully-qualified suffix of the current hostname. When two pages have defined the same <code>document.domain</code>, same origin policy is not applied. However, <code>document.domain</code> has to be specified mutually - it is not enough for just one page to specify its <code>document.domain</code>. Also, when <code>document.domain</code> property is set, port is set to null, while still being checked. This means company.com:8080 cannot bypass same origin policy and access company.com by setting <code>document.domain = "company.com"</code>, as their ports (null vs 80) differ.
+      </para>
+
+      <para>
+        However, <code>document.domain</code> has several issues:
+        <itemizedlist>
+          <listitem>
+            <para>When web.company.com and storage.company.com need to share resources and set <code>document.domain = company.com</code>, any subdomain can set its <code>document.domain</code> and access both of them, even though this access was not intended to be permitted.</para>
+          </listitem>
+          <listitem>
+            <para>
+              When this mechanism cannot be used, cross-domain requests are forbidden even for legitimate use, which creates problem for websites that use multiple (sub)domains.
+            </para>
+          </listitem>
+        </itemizedlist>
+      </para>
+    </section>
+
+    <section>
+      <title>Unrestricted operations</title>
+      <para>Same Origin Policy restricts Javascript access to DOM and XMLHttpRequest across domains. However, there are multiple operations that are not restricted:
+        <itemizedlist>
+        <listitem>
+          <para>
+            Javascript embedding with <code>&lt;script src=".."&gt;&lt;script&gt;</code>
+          </para>
+        </listitem>
+        <listitem>
+          <para>
+            CSS embedding with <code>&lt;link rel="stylesheet" href="..."&gt;</code>
+          </para>
+        </listitem>
+        <listitem>
+          <para>
+            Anything with <code>&lt;frame&gt;</code> and <code>&lt;iframe&gt;</code>
+          </para>
+        </listitem>
+        <listitem>
+          <para>
+            .. and others
+          </para>
+        </listitem>
+      </itemizedlist>
+
+      </para>
+    </section>
+
+    <section>
+      <title>Additional resources</title>
+      <itemizedlist>
+        <listitem>
+          <para>
+            Browser Security Handbook <ulink url="http://code.google.com/p/browsersec/wiki/Part2">http://code.google.com/p/browsersec/wiki/Part2</ulink>
+          </para>
+        </listitem>
+        <listitem>
+          <para>
+            Same Origin Policy article on Mozilla Developer Network <ulink url="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Same_origin_policy_for_JavaScript">https://developer.mozilla.org/en-US/docs/Web/JavaScript/Same_origin_policy_for_JavaScript</ulink>
+          </para>
+        </listitem>
+      </itemizedlist>
+    </section>
+  </section>
+
+  <section>
+    <title>Bypassing same origin policy</title>
+    <para>
+      Same Origin Policy as security mechanism leaves a lot to be desired: on one hand, it is not flexible enough to allow web developers use cross-domain resources in several legitimate usecases without exceptions to the rule and workarounds, on the other hand, such exceptions create opportunities for attacker. 
+    </para>
+
+    <para>
+      There are several other mechanisms except <code>document.domain</code> that provide a way to relax Same Origin Policy.
+    </para>
+
+    <section id='CORS'>
+      <title>Cross-origin resource sharing (CORS)</title>
+      <para>
+        Cross-origin resource sharing is a mechanism that allows web application to inform browser, whether cross domain requests against the requested resource are expected.
+      </para>
+
+      <para>
+        Web browsers that conform to the CORS alter their behaviour of handling XMLHttpRequests: instead of denying the cross-domain request immediately, HTTP request is sent with <code>Origin</code> header. Let's assume http://example.com/testpage is making a XMLHttpRequest against http://content.com/wanted_image. Request would contain:
+
+        <programlisting>
+GET /wanted_image HTTP/1.1
+Referrer: http://example.com/testpage
+Origin: http://example.com
+        </programlisting>
+
+        If the server allows sharing of the resource with domain that originated the request, the response would include:
+
+        <programlisting>
+HTTP/1.1 200 OK
+Access-Control-Allow-Origin: http://example.com
+..
+        </programlisting>
+
+        By sending <constant>Access-Control-Allow-Origin</constant> header, server explicitly tells browser that this cross domain request shall be allowed. Allowed values of <constant>Access-Control-Allow-Origin</constant> are: * (denoting any domain, effectively marking the resource public) or space separated list of allowed origins (in practice, this usually contains just a single domain - one that was specified in Origin header in request). 
+      </para>
+
+      <para>
+        If the resource should not be accessible by the originating domain, server ought not include Access-Control-Allow-Origin header in the response. By default, upon receiving such response from server browser will not pass the response back to the page that originated the request. 
+      </para>
+
+      <para>
+        Several additional considerations:
+        <itemizedlist>
+        <listitem>
+          <para>
+            If the browser is outdated and does not conform to CORS, cross domain request will be denied immediately without sending the request to the server. This means usability of web applications relying on CORS might be restricted on old browsers.
+          </para>
+        </listitem>
+        <listitem>
+          <para>
+            If the web server does not conform to CORS, the Access-Control-Allow-Origin header will not be included in the response and the request will be denied on the client side.
+          </para>
+        </listitem>
+        <listitem>
+          <para>
+            Cross-domain access to resources is enforced on the side of the client. However, since the request includes Origin header, server may also restrict access to resources from other domains (e.g. by returning nothing).
+          </para>
+        </listitem>
+        <listitem>
+          <para>
+            If the origin of page is unknown (for example webpage is running from a file), browsers will send 
+            <programlisting>
+Origin: null
+            </programlisting>
+          </para>
+        </listitem>
+      </itemizedlist>
+      </para>
+
+      <section>
+        <title>Using CORS in Rack-based applications</title>
+        <para>
+          CORS support for Rack-based applications is provided by <ulink url="https://github.com/cyu/rack-cors">rack-cors</ulink> gem. After adding it to the applications Gemfile
+          <programlisting>
+gem 'rack-cors', :require => 'rack/cors'
+          </programlisting>
+          and configure Rails by modifying config/application.rb: 
+
+          <programlisting>
+module YourApp
+class Application &lt; Rails::Application
+
+  # ...
+
+  config.middleware.use Rack::Cors do
+    allow do
+      origins '*'
+      resource '*', :headers => :any, :methods => [:get, :post, :options]
+    end
+  end
+
+end
+end
+          </programlisting>
+          This configuration permits all origins access to any resource on the server via GET, POST and OPTIONS methods. Customizing the configuration, developer of the application can restrict cross-domain acess to resources by origin, headers and methods.
+        </para>
+      </section>
+    </section>
+
+    <section id="JSONP">
+      <title>JSON with padding (JSONP)</title>
+      <para>
+        JSONP is a very common way of hacking around the Same Origin Policy. This mechanism makes use of <code>&lt;script&gt;</code> tag and the fact that embedding Javascript code from other domains is not resctricted by the same origin policy. Since the code references by src attribute of <code>&lt;script&gt;</code> tag is loaded, it can be used as a vehicle to carry data and return them after evaluation.
+      </para>
+
+      <para>
+        Lets assume webpage needs to access resource at http://example.com/resource/1, which returns JSON data like:
+        <programlisting>
+{"Key1": "Value1", "Key2": "Value2"}
+        </programlisting>
+
+        When webpage requests the resource with 
+
+        <programlisting>
+&lt;source src="http://example.com/resource/1"&gt;&lt;/source&gt;
+        </programlisting>
+        after receiving the response, browser will try to evaluate received data. Since data are not executable, interpreter would end with error and data would not be accessible to the code that requested it.
+      </para>
+
+      <para>
+      To work around this, it would be enough if the returned data were enclosed with function, that would be able to parse them on the client side. Suppose function <code>parseData</code> can accept JSON data as argument, parse it and make it accessible to the rest of the page:
+
+      <programlisting>
+parseData({"Key1": "Value1", "Key2": "Value2"})
+      </programlisting>
+      </para>
+
+      <para>
+        However, web server does not know the name of the function that will parse data. Final piece is to pass the name of data-parsing function to server as parameter in request:
+        <programlisting>
+&lt;script src="http://example.com/resource/1?jsonp=parseData"&gt;&lt;/script&gt;
+        </programlisting>
+      </para>
+
+      <para>
+        This technique of sharing resources across domains carries bigger security risks than CORS. Since <command>source</command> tag does not fall under Same Origin Policy on the client side, browser sends normal HTTP GET request without <constant>Origin</constant> header. Server that receives request has no means to know that the request was generated on behalf of page from other domain. Since neither the browser nor the server checks this kind of cross-domain requests, last obstacle that prevents exploitation is the fact that returned response is evaluated as Javascript code. 
+      </para>
+
+      <para>
+        Example of this type of vulnerability is <ulink url="https://access.redhat.com/security/cve/CVE-2013-6443">CVE-2013-6443</ulink>. Cloud Forms Manage IQ application has been found vulnerable to cross-domain requests issued using JSONP. UI of application makes heavy use of Javascript and in this particular case changing the tab to "Authentication" would generate this HTTP request through XMLHttpRequest API:
+
+        <programlisting>
+GET /ops/change_tab/?tab_id=settings_authentication&amp;callback=...
+Referrer: ...
+Cookie: ...
+        </programlisting>
+        Response returned by the server would look like this:
+
+        <programlisting>
+HTTP/1.1 200 OK
+....
+
+
+miqButtons('hide');
+Element.replace("ops_tabs", "&lt;div id=\"ops_tabs\" ...");
+        </programlisting>
+        where ops_tabs div contained html code of the Authentication tab including form with hidden CSRF token. To exploit this vulnerability, attacker would patch <command>Element.replace</command> function on his page and issue a JSONP request against CFME server.
+        <programlisting>
+&lt;script src='http://code.jquery.com/jquery-1.10.2.min.js'&gt;&lt;/script&gt;
+&lt;script&gt;
+function test() {
+$.ajax({
+    url: $( "input[name=url]" ).val() + '/ops/change_tab/?tab_id=settings_authentication',
+    dataType: 'jsonp'
+});
+};
+
+var Element = { replace: function (a,text) { 
+...
+}
+&gt;/script&gt;
+        </programlisting>
+
+        This way attacker can run arbitrary code on returned response from the server: since the request also contains CSRF token, it is easy for attacker to steal it and issue successful CSRF request on behalf of currently logged-in user.
+      </para>
+    </section>
+
+    <section>
+      <title>Additional resources</title>
+      <itemizedlist>
+        <listitem>
+          <para>
+            W3C Recommendation - Cross-Origin Resouce Sharing <ulink url="http://www.w3.org/TR/access-control/">http://www.w3.org/TR/access-control/</ulink>
+          </para>
+        </listitem>
+        <listitem>
+          <para>
+            cross-site xmlhttprequest with CORS <ulink url="http://hacks.mozilla.org/2009/07/cross-site-xmlhttprequest-with-cors/">http://hacks.mozilla.org/2009/07/cross-site-xmlhttprequest-with-cors/</ulink>
+          </para>
+        </listitem>
+        <listitem>
+          <para>
+            Ajax and Mashup Security - Open Ajax Alliance <ulink url="http://www.openajax.org/whitepapers/Ajax%20and%20Mashup%20Security.php">http://www.openajax.org/whitepapers/Ajax%20and%20Mashup%20Security.php</ulink>
+          </para>
+        </listitem>
+        <listitem>
+          <para>
+            CVE-2013-6443 and reproducer by Martin Povolný <ulink url="https://access.redhat.com/security/cve/CVE-2013-6443">https://access.redhat.com/security/cve/CVE-2013-6443</ulink>
+          </para>
+        </listitem>
+      </itemizedlist>
+    </section>
+  </section>
+
+  <section id="CSP">
+    <title>Content Security Policy (CSP)</title>
+    <para>
+      Content Security policy is a comprehensive web security mechanism that allows web applications to declaratively list all sources of trusted content. Originally developed at Mozilla and later adopted by Webkit, Content Security Policy is now a W3C Candidate Recommendation. 
+    </para>
+    <para>
+      One of the persistent problems in web application security is the lack of distinction between content loaded from trusted sources and potentially malicious content injected or referenced in the web page. Content Security Policy takes a comprehensive approach: a new HTTP header is introduced to allow server to send a whitelist of trusted sources to the client. Conformant user agents follow the policy declared in the header and block content from untrusted sources.
+    </para>
+
+    <para>
+      Several headers are related to Content Security Policy:
+      <itemizedlist>
+        <listitem>
+          <para>
+            <constant>X-Content-Security-Policy:</constant> experimental header originally introduced by Mozilla
+          </para>
+        </listitem>
+        <listitem>
+          <para>
+            <constant>X-WebKit-CSP:</constant> experimental header used in WebKit based browsers
+          </para>
+        </listitem>
+        <listitem>
+          <para>
+            <constant>Content-Security-Policy:</constant> a standard header proposed by W3C, that shall be used as replacement for the two abovementioned experimenal headers. However, older versions of browsers may support only experimental versions of this header, so web application developers that seek the best coverage may want to use all three headers together.
+          </para>
+        </listitem>
+      </itemizedlist>
+    </para>
+
+    <para>
+      Value of the header consists of several directives separated by semicolon, each of them followed by list of sources separated by spaces. Following simple policy declares http://example.com as a trusted sources of scripts and disables all other sources:
+
+      <programlisting>
+Content-Security-Policy: default-src 'none'; script-src http://example.com
+      </programlisting>
+    </para>
+
+    <para>
+      Since CSP uses whitelist approach, loading scripts from any other domain would not be permitted. Suppose webpage contains following:
+
+      <programlisting>
+&lt;script src="http://malicious.com"&gt;&lt;/script&gt;
+      </programlisting>
+
+      In Firefox this would generate following warning:
+      <programlisting>
+[13:16:03.713] CSP WARN:  Directive script-src http://example.com:80 violated by http://malicious.com/
+      </programlisting>
+
+      This approach works in case of content with known origin, but this does not solve problem with inlined scripts such as 
+      <programlisting>
+&lt;script&gt;exploit()&lt;/script&gt;
+      </programlisting>
+      CSP addresses this problem by completely banning execution of any scripts or CSS inlined with <constant>&lt;script&gt;</constant> or JavaScript URI and similar restrictions apply on <constant>eval()</constant> like mechanisms. This is necessary from security standpoint, however, it also means that web application developers who want to adopt CSP need to make sure their application does not make use of banned functions. To mitigate this CSP includes reporting capability via <constant>report-uri</constant> directive, reporting only mode via <constant>Content-Security-Policy-Report-Only</constant> header and ability to disable protection with <constant>'unsafe-inline'</constant> and <constant>'unsafe-eval'</constant> sources (see below).
+    </para>
+
+    <section>
+      <title>Directives and source lists</title>
+      <para>
+        CSP defines several directives that define restricted content types:
+        <itemizedlist>
+          <listitem>
+            <para>
+              <constant>script-src</constant> restricts which scripts the protected resource can execute.
+            </para>
+          </listitem>
+          <listitem>
+            <para>
+              <constant>object-src</constant> restricts from where the protected resource can load plugins.
+            </para>
+          </listitem>
+          <listitem>
+            <para>
+              <constant>style-src</constant> restricts which styles the user applies to the protected resource.
+            </para>
+          </listitem>
+          <listitem>
+            <para>
+              <constant>img-src</constant> restricts from where the protected resource can load images.
+            </para>
+          </listitem>
+          <listitem>
+            <para>
+              <constant>media-src</constant> restricts from where the protected resource can load video and audio.
+            </para>
+          </listitem>
+          <listitem>
+            <para>
+              <constant>frame-src</constant> restricts from where the protected resource can embed frames.
+            </para>
+          </listitem>
+          <listitem>
+            <para>
+              <constant>font-src</constant> restricts from where the protected resource can load fonts.
+            </para>
+          </listitem>
+          <listitem>
+            <para>
+              <constant>connect-src</constant> restricts which URIs the protected resource can load using script interfaces (like XMLHttpRequest).
+            </para>
+          </listitem>
+        </itemizedlist>
+
+        and additional directives that control behaviour of CSP:
+        <itemizedlist>
+          <listitem>
+            <para>
+              <constant>default-src</constant> sets a default source list for all directives except sandbox. If not set, directives that are omitted permit all sources by default.
+            </para>
+          </listitem>
+          <listitem>
+            <para>
+              <constant>sandbox</constant> is an optional directive that specifies an HTML sandbox policy that the user agent applies to the protected resource.
+            </para>
+          </listitem>
+          <listitem>
+            <para>
+              <constant>report-uri</constant> specifies a URI to which the user agent sends reports about policy violation.
+            </para>
+          </listitem>
+        </itemizedlist>
+      </para>
+
+      <para>
+        Source list syntax is fairly flexible: source can be specified from scheme only (https:) and hostname (example.com) to a fully qualified URI (https://example.com:443). Wildcards are also permitted instead of scheme, port or as prefix of domain name to denote arbitrary subdomain (*.example.com). Additionally, there are four keywords allowed in the source list:
+         <itemizedlist>
+          <listitem>
+            <para>
+              <constant>'none'</constant> matches nothing.
+            </para>
+          </listitem>
+          <listitem>
+            <para>
+              <constant>'self'</constant> matches current origin.
+            </para>
+          </listitem>
+          <listitem>
+            <para>
+              <constant>'unsafe-inline'</constant> allows inline JavaScript and CSS and can be used with script-src and style-src directives.
+            </para>
+          </listitem>
+          <listitem>
+            <para>
+              <constant>'unsafe-eval'</constant> allows eval-list mechanisms that convert text to executable script and can be used with script-src directive.
+            </para>
+          </listitem>
+        </itemizedlist>
+      </para>
+
+      <para>
+        <programlisting>
+Content-Security-Policy: default-src 'none'; script-src https://cdn.example.com 'self' 'unsafe-inline'; connect-src https://api.example.com; 
+        </programlisting>
+      </para>
+
+    </section>
+
+    <section>
+      <title>Reporting policy violations</title>
+      <para>
+        Developers who are tuning CSP for their web applications or adopting CSP can use reporting capabilities of CSP. By including <constant>report-uri</constant> directive server can instruct client's user agent to send POST with JSON-formatted violation report to a specified URI. 
+        <programlisting>
+Content-Security-Policy: ...; report-uri /csp_report_parser;
+        </programlisting>
+
+        Reports sent back to server about CSP violation looks like this:
+        <programlisting>
+{
+"csp-report": {
+  "document-uri": "http://example.org/page.html",
+  "referrer": "http://evil.example.com/haxor.html",
+  "blocked-uri": "http://evil.example.com/image.png",
+  "violated-directive": "default-src 'self'",
+  "original-policy": "default-src 'self'; report-uri http://example.org/csp-report.cgi"
+}
+}
+        </programlisting>
+
+        When deploying CSP it may be useful to test the policy in the wild before enforcing it. It is possible to achieve this by sending <constant>Content-Security-Policy-Report-Only</constant> header instead - this will indicate that the user agent must monitor any policy violations, but not enforce them. Combined with <constant>report-uri</constant> this gives developers tools to seamlessly deploy new CSP policy. 
+        <programlisting>
+Content-Security-Policy-Report-Only: ...; report-uri /csp_report_parser;
+        </programlisting>
+      </para>
+    </section>
+
+    <section>
+      <title>References</title>
+      <itemizedlist>
+        <listitem>
+          <para>W3C Content Security Policy 1.0 <ulink url="http://www.w3.org/TR/CSP/">http://www.w3.org/TR/CSP/</ulink></para>
+        </listitem>
+        <listitem>
+          <para>HTML5Rocks tutorial <ulink url="http://www.html5rocks.com/en/tutorials/security/content-security-policy/">http://www.html5rocks.com/en/tutorials/security/content-security-policy/</ulink></para>
+        </listitem>
+        <listitem>
+          <para>GitHub blog on CSP <ulink url="https://github.com/blog/1477-content-security-policy">https://github.com/blog/1477-content-security-policy</ulink></para>
+        </listitem>
+      </itemizedlist>
+    </section>
+  </section>
+
+  <section id="HSTS">
+    <title>HTTP Strict Transport Security</title>
+    <para>HTTP Strict Transport Security is a mechanism that allows server to inform client that any interactions with the server shall be carried over secure HTTPS connection. </para>
+
+    <para>
+      HTTPS provides a secure tunnel between client and the server, yet there are still ways through which data can leak to the attacker. One of the most practical attacks on SSL is SSL stripping attack introduced by Moxie Marlinspike, in which active network attacker transparently converts HTTPS connection to insecure one. To the client it seems like web application does not support HTTPS and has no means to verify whether this is the case.
+    </para>
+
+    <para>HTTP Strict Transport Security mechanism allows server to inform client's user agent that the web application shall be accessed only through secure HTTPS connection. When client`s UA conformant with HSTS receives such notice from server, it enforces following behaviour:
+
+      <itemizedlist>
+        <listitem>
+          <para>
+            all references to HSTS host are converted into secure ones before dereferencing
+          </para>
+        </listitem>
+        <listitem>
+          <para>
+            connection is terminated upon any and all secure transport errors or warnings without interaction with user
+          </para>
+        </listitem>
+      </itemizedlist>
+    </para>
+    <para>
+      User agents which receive response with HSTS header need to retain data about host enforcing strict transport security for the timespan declared by the host. User agent builds a list of known HSTS hosts and whenever request is sent to known HSTS host, HTTPS is used. 
+    </para>
+
+    <para>
+      HSTS header sent by the server includes timespan during which UA should enforce strict transport security in seconds:
+      <programlisting>
+Strict-Transport-Security: max-age=631138519
+      </programlisting>
+    </para>
+    <para>
+      Optionally, server can also specify that HSTS be enforced on all subdomains:
+      <programlisting>
+Strict-Transport-Security: max-age=631138519; includeSubDomains
+      </programlisting>
+    </para>
+    <para>
+      Setting timespan to zero
+      <programlisting>
+Strict-Transport-Security: max-age=0
+      </programlisting>
+      allows the server to indicate that UA should delete HSTS policy associated with the host.
+    </para>
+
+    <para>
+      This header protects client from visiting host he has visited before using unsecure connection, but when the client connects for the first time, he has no prior knowledge about HSTS policy for the host. This theoretically allows attacker to successfully perform attack against user that connect for the first time. To mitigate this, browsers include preloaded list of known HSTS hosts in the default installation.
+    </para>
+
+    <section>
+      <title>Configuring HSTS in Rails</title>
+      <para>
+        A single directive in Rail configuration
+        <programlisting>
+config.force_ssl = true
+        </programlisting>
+        enables HSTS for the application.
+      </para>
+    </section>
+
+    <section>
+      <title>References</title>
+      <itemizedlist>
+        <listitem>
+          <para>RFC 6797 <ulink url="http://tools.ietf.org/html/rfc6797">http://tools.ietf.org/html/rfc6797</ulink></para>
+        </listitem>
+        <listitem>
+          <para>Mozilla: Preloading HSTS <ulink url="https://blog.mozilla.org/security/2012/11/01/preloading-hsts/">https://blog.mozilla.org/security/2012/11/01/preloading-hsts/</ulink></para>
+        </listitem>
+        <listitem>
+          <para>Chromium: list of preloaded  known  HSTS  hosts <ulink url="https://src.chromium.org/viewvc/chrome/trunk/src/net/http/transport_security_state_static.json">https://src.chromium.org/viewvc/chrome/trunk/src/net/http/transport_security_state_static.json</ulink></para>
+        </listitem>
+      </itemizedlist>
+    </section>
+  </section>
+
+  <section id="HTTP_headers">
+    <title>Security related HTTP headers</title>
+    <para>
+      There are several HTTP headers that increase security of web application in various ways. Below is non-exhaustive list of most important ones, some of which were already mentioned and explained in previous sections:
+    </para>
+    <section>
+      <title>X-Frame-Options</title>
+      <para>
+        X-Frame-Options header can be used by server to indicate that page returned shall not be rendered inside <command>&lt;frame&gt;</command> and <command>&lt;iframe&gt;</command> tags and sites can use this as a defense from clickjacking attacks.
+      </para>
+      <para>
+
+        <variablelist>
+          <varlistentry>
+            <term>DENY</term>
+            <listitem>
+              <para>Content of the page shall not be displayed in a frame regardless of the origin of the page attempting to do so.</para>
+            </listitem>
+          </varlistentry>
+          <varlistentry>
+            <term>SAMEORIGIN</term>
+            <listitem>
+              <para>Content of the page can be embedded only in a page with the same origin as the page itself.</para>
+            </listitem>
+          </varlistentry>
+          <varlistentry>
+            <term>ALLOW-FROM</term>
+            <listitem>
+              <para>Content of the page can be embedded only in a page with top level origin specified by this option.</para>
+            </listitem>
+          </varlistentry>
+        </variablelist>
+      </para>
+      <para>
+        The header returned from server allowing content to be embedded within https://example.com/ looks like this
+        <programlisting>
+X-Frame-Options: ALLOW-FROM https://example.com/
+        </programlisting>
+      </para>
+      <section>
+        <title>References</title>
+        <itemizedlist>
+          <listitem>
+            <para>RFC 7034 <ulink url="http://tools.ietf.org/html/rfc7034">http://tools.ietf.org/html/rfc7034</ulink></para>
+          </listitem>
+        </itemizedlist>
+      </section>
+    </section>
+    <section>
+      <title>X-XSS-Protection</title>
+      <para>
+        Modern browsers usually come with built-in XSS filter, that is enabled by default. Originally IE 8 introduced new XSS filter and this header was created to give web application developers way to turn this feature off in case it breaks functionality of the web application for users. Later this concept was also adpoted by Webkit, which implements its own XSS filter.
+      </para>
+
+      <para>
+        XSS filter does not prevent XSS attacks by blocking malicious scripts, but rather tries to identify untrusted scripts and transform them into benign strings. Heuristics that identify untrusted scripts usually try to match  scripts embedded within request to those included in response. If the script matches, browser assumes the script included in the content is not trusted, as it is most probably not part of the content of the application, but rather included as user-supplied parameter. This means XSS filters are effective only against reflective XSS, not other variants.
+      </para>
+
+      <para>
+        Setting value of the header to 1 should re-enable XSS filter, in case it was disabled by user.
+        <programlisting>
+X-XSS-Protection: 1
+        </programlisting>
+      </para>
+
+      <para>
+        Sanitization of scripts by converting them to benign strings has been source of bugs and security vulnerabilities - sanitization in IE8 XSS filter has been found counterproductive as it actually introduced XSS vulnerabilities in websites that were previously not vulnerable to XSS (including bing.com, google.com, wikipedia.com and others. For details, see whitepaper by Eduardo Vela Nava and David Lindsay <ulink url="http://p42.us/ie8xss/">Abusing Internet Explorer 8's XSS Filters</ulink> ). 
+      </para>
+      <para>
+        To remedy this, extension to the  X-XSS-Protection header was introduced:
+        <programlisting>
+X-XSS-Protection: 1; mode=block
+        </programlisting>
+      </para>
+      <para>
+        With mode set to block browser will outright block any script found untrusted instead of trying to sanitize and display it. 
+      </para>
+      <para>
+
+      </para>
+      <section>
+        <title>References</title>
+        <itemizedlist>
+          <listitem>
+            <para>
+              IE Internals: <ulink url="http://blogs.msdn.com/b/ieinternals/archive/2011/01/31/controlling-the-internet-explorer-xss-filter-with-the-x-xss-protection-http-header.aspx">Controlling XSS Filter</ulink>
+            </para>
+          </listitem>
+          <listitem>
+            <para>
+              IE Blog: <ulink url="http://blogs.msdn.com/b/ie/archive/2008/07/02/ie8-security-part-iv-the-xss-filter.aspx">The XSS Filter</ulink>
+            </para>
+          </listitem>
+          <listitem>
+            <para>
+              Chromium Blog: <ulink url="http://blog.chromium.org/2010/01/security-in-depth-new-security-features.html">Security in Depth: New Security Features</ulink>
+            </para>
+          </listitem>
+        </itemizedlist>
+      </section>
+    </section>
+    <section>
+      <title>X-Content-Type-Options</title>
+      <para>
+        To provide better compatibility modern browesers usually come with a content-type sniffing algorithm, which allows them to infer content type of file by inspecting its content. This is useful in cases when HTTP reponse does not include Content-Type header or if its mismatched. By correctly rendering the content and ignoring mismatched MIME type browser gains competitive advantage over other browser who do not render such file correctly. 
+      </para>
+
+      <para>
+        Even though such behaviour enhances user experience, it also has impact on security. Suppose web application allows users to upload and download content and to protect from malicious file types, it implements content type filters that ban possibly dangerous file types. Attacker can upload malicious file with benign <constant>Content-Type</constant> that will pass web applications filters and server will store the file along with declared MIME type. When users download such file, server will include stored type in <constant>Content-Type</constant> header. However, browser's content-type sniffing algorithm will determine the correct type and ignore received <constant>Content-Type</constant> header, making the client vulnerable.
+      </para>
+
+      <para>
+        To prevent browsers from using content-type sniffing, server can include 
+        <programlisting>
+X-Content-Type-Options: nosniff
+        </programlisting>
+
+        header to enforce the type sent in <constant>Content-Type</constant> header.
+      </para>
+      <section>
+        <title>References</title>
+        <itemizedlist>
+          <listitem>
+            <para>
+               Internet Explorer Dev Center: Reducing MIME type security risks <ulink url="http://msdn.microsoft.com/en-us/library/ie/gg622941">http://msdn.microsoft.com/en-us/library/ie/gg622941</ulink>
+            </para>
+          </listitem>
+        </itemizedlist>
+      </section>
+    </section>
+    <section>
+      <title>Content-Security-Policy</title>
+      <para>This header allows server specify Content Security Policy and enable user agent to block content from untrusted sources - see <xref linkend='CSP'/></para>
+    </section>
+    <section>
+      <title>Access-Control-Allow-Origin</title>
+      <para>This response header is part of the implemetation of Cross Origin Resource Sharing described in <xref linkend='CORS'/>. Via this header server explicitly tells client`s browser whether cross-domain access to resource shall be permitted for the Origin specified.</para>
+    </section>
+    <section>
+      <title>Strict-Transport-Security</title>
+      <para>This header is part of HTTP Strict Transport Security described in <xref linkend='HSTS'/>. Using it server indicates that any requests from client shall be made through secure SSL connection and such policy be enforced for a declared timespan.</para>
+    </section>
+  </section>
+
+  <section>
+    <title>Configuring Rails</title>
+    <para>
+      Enabling security related headers in Rails application is simplified by <ulink url="https://github.com/twitter/secureheaders">SecureHeaders</ulink> gem. After installation, it automatically adds:
+      <itemizedlist>
+        <listitem>
+          <para>
+            Content Security Policy
+          </para>
+        </listitem>
+        <listitem>
+          <para>
+            HTTP Strict Transport Security
+          </para>
+        </listitem>
+        <listitem>
+          <para>
+            X-Frame-Options
+          </para>
+        </listitem>
+        <listitem>
+          <para>
+            X-XSS-Protection
+          </para>
+        </listitem>
+        <listitem>
+          <para>
+            X-Content-Type-Options
+          </para>
+        </listitem>
+      </itemizedlist>
+    </para>
+    
+    <para>
+      After adding the gem to project's Gemfile
+
+      <programlisting>
+gem 'secure_headers'
+      </programlisting>
+
+      enable its  functionality by adding <constant>ensure_security_headers</constant> directive to ApplicationController:
+      <programlisting language="Ruby">
+class ApplicationController &lt; ActionController::Base
+ensure_security_headers
+end
+      </programlisting>
+    </para>
+    <para>
+      Configuration of the header values can be done by creating an initializer and overriding default gem configuration:
+
+      <programlisting language="Ruby">
+::SecureHeaders::Configuration.configure do |config|
+config.hsts = {:max_age => 20.years.to_i, :include_subdomains => true}
+config.x_frame_options = 'DENY'
+config.x_content_type_options = "nosniff"
+config.x_xss_protection = {:value => 1, :mode => 'block'}
+config.csp = {
+  :enforce => true,
+  :default_src => "https://* self",
+  :frame_src => "https://* http://*.twimg.com http://itunes.apple.com",
+  :img_src => "https://*",
+  :report_uri => '//example.com/uri-directive'
+}
+end
+      </programlisting>
+      It is important to set <constant>:enforce</constant> to <constant>true</constant> in CSP configuration, because SecureHeaders defaults to false, which indicates Content-Security-Policy-Report-Only header will be sent and the policy will not be enforced, only monitored (see <xref linkend='CSP'/>). SecureHeaders will also set value of <constant>:default_src</constant> to all empty directives explicitly and not rely on the user agent's behaviour. 
+    </para>
+  </section>
+
+  <section>
+    <title>Guidelines and recommendations</title>
+    <para>Following are general recommendations based on previous sections regarding client side security:</para>
+    <para>
+      <variablelist>
+        <varlistentry>
+          <term>Avoid JSONP pattern for cross-origin resource sharing</term>
+          <listitem>
+            <para>
+              JSONP pattern emerged as a workaround of Same Origin Policy in case web application needs to share resources across domains. Such approach creates a big attack surface and JSONP hijacking is dangerous even for application that don't use JSONP pattern, but return JavaScript content on GET requests (see <xref linkend="JSONP"/>).
+            </para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term>Use SSL for all connections and use HSTS to enforce it</term>
+          <listitem>
+            <para>Using non-SSL connection is a serious weakness of web application with regards to network attackers. Enforcing SSL connection by redirection is often insufficient too, and it is desirable to add HSTS header to SSL enabled web applications (see <xref linkend="HSTS"/>).</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term>Use Content Security Policy</term>
+          <listitem>
+            <para>Content Security Policy is quickly becoming standardized and provides a robust solution against XSS attacks and untrusted content loaded in the context of web page in general. Adopting it requires a web application to be compliant and enforces already accepted good practices with regards to script inlining (see <xref linkend="CSP"/>).</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term>Use experimental security related headers for additional hardening</term>
+          <listitem>
+            <para>
+              Several non-standard HTTP headers that control implementation-specific behaviour of some user agents can be used to provide additional hardening of web application. These include <constant>X-Frame-Options</constant>, <constant>X-XSS-Protection</constant> and <constant>X-Content-Type-Options</constant> (see <xref linkend="HTTP_headers"/>). In case of CSP <constant>X-WebKit-CSP</constant> and <constant>X-Content-Security-Policy</constant> can be used to provide better compatibility with older Mozilla and WebKit-based browsers (see <xref linkend="CSP"/>).
+            </para>
+          </listitem>
+        </varlistentry>
+      </variablelist>
+    </para>
+  </section>
+
+</section>
