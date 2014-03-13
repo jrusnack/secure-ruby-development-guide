@@ -778,6 +778,16 @@ X-Content-Type-Options: nosniff
 
           header to enforce the type sent in <constant>Content-Type</constant> header.
         </para>
+        <section>
+          <title>References</title>
+          <itemizedlist>
+            <listitem>
+              <para>
+                 Internet Explorer Dev Center: Reducing MIME type security risks <ulink url="http://msdn.microsoft.com/en-us/library/ie/gg622941">http://msdn.microsoft.com/en-us/library/ie/gg622941</ulink>
+              </para>
+            </listitem>
+          </itemizedlist>
+        </section>
       </section>
       <section>
         <title>Content-Security-Policy</title>
@@ -792,12 +802,85 @@ X-Content-Type-Options: nosniff
         <para>This header is part of HTTP Strict Transport Security described in <xref linkend='HSTS'/>. Using it server indicates that any requests from client shall be made through secure SSL connection and such policy be enforced for a declared timespan.</para>
       </section>
     </section>
+
+    <section>
+      <title>Configuring Rails</title>
+      <para>
+        Enabling security related headers in Rails application is simplified by <ulink url="https://github.com/twitter/secureheaders">SecureHeaders</ulink> gem. After installation, it automatically adds:
+        <itemizedlist>
+          <listitem>
+            <para>
+              Content Security Policy
+            </para>
+          </listitem>
+          <listitem>
+            <para>
+              HTTP Strict Transport Security
+            </para>
+          </listitem>
+          <listitem>
+            <para>
+              X-Frame-Options
+            </para>
+          </listitem>
+          <listitem>
+            <para>
+              X-XSS-Protection
+            </para>
+          </listitem>
+          <listitem>
+            <para>
+              X-Content-Type-Options
+            </para>
+          </listitem>
+        </itemizedlist>
+      </para>
+      
+      <para>
+        After adding the gem to project's Gemfile
+
+        <programlisting>
+gem 'secure_headers'
+        </programlisting>
+
+        enable its  functionality by adding <constant>ensure_security_headers</constant> directive to ApplicationController:
+        <programlisting language="Ruby">
+class ApplicationController &lt; ActionController::Base
+  ensure_security_headers
+end
+        </programlisting>
+      </para>
+      <para>
+        Configuration of the header values can be done by creating an initializer and overriding default gem configuration:
+
+        <programlisting language="Ruby">
+::SecureHeaders::Configuration.configure do |config|
+  config.hsts = {:max_age => 20.years.to_i, :include_subdomains => true}
+  config.x_frame_options = 'DENY'
+  config.x_content_type_options = "nosniff"
+  config.x_xss_protection = {:value => 1, :mode => 'block'}
+  config.csp = {
+    :enforce => true,
+    :default_src => "https://* self",
+    :frame_src => "https://* http://*.twimg.com http://itunes.apple.com",
+    :img_src => "https://*",
+    :report_uri => '//example.com/uri-directive'
+  }
+end
+        </programlisting>
+        It is important to set <constant>:enforce</constant> to <constant>true</constant> in CSP configuration, because SecureHeaders defaults to false, which indicates Content-Security-Policy-Report-Only header will be sent and the policy will not be enforced, only monitored (see <xref linkend='CSP'/>). SecureHeaders will also set value of <constant>:default_src</constant> to all empty directives explicitly and not rely on the user agent's behaviour. 
+      </para>
+    </section>
+
+    <section>
+      <title>Guidelines and recommendations</title>
+      <para>
+        
+      </para>
+    </section>
+
   </section>
 
-  <section>
-    <title>Guidelines and recommendations</title>
-    <para></para>
-  </section>
 
   <section>
     <title>Application and server configuration and hardening</title>
