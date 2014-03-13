@@ -277,7 +277,7 @@ end
         </section>
       </section>
 
-      <section>
+      <section id="JSONP">
         <title>JSON with padding (JSONP)</title>
         <para>
           JSONP is a very common way of hacking around the Same Origin Policy. This mechanism makes use of <code>&lt;script&gt;</code> tag and the fact that embedding Javascript code from other domains is not resctricted by the same origin policy. Since the code references by src attribute of <code>&lt;script&gt;</code> tag is loaded, it can be used as a vehicle to carry data and return them after evaluation.
@@ -577,6 +577,9 @@ Content-Security-Policy-Report-Only: ...; report-uri /csp_report_parser;
           <listitem>
             <para>HTML5Rocks tutorial <ulink url="http://www.html5rocks.com/en/tutorials/security/content-security-policy/">http://www.html5rocks.com/en/tutorials/security/content-security-policy/</ulink></para>
           </listitem>
+          <listitem>
+            <para>GitHub blog on CSP <ulink url="https://github.com/blog/1477-content-security-policy">https://github.com/blog/1477-content-security-policy</ulink></para>
+          </listitem>
         </itemizedlist>
       </section>
     </section>
@@ -659,7 +662,7 @@ config.force_ssl = true
       </section>
     </section>
 
-    <section>
+    <section id="HTTP_headers">
       <title>Security related HTTP headers</title>
       <para>
         There are several HTTP headers that increase security of web application in various ways. Below is non-exhaustive list of most important ones, some of which were already mentioned and explained in previous sections:
@@ -874,8 +877,38 @@ end
 
     <section>
       <title>Guidelines and recommendations</title>
+      <para>Following are general recommendations based on previous sections regarding client side security:</para>
       <para>
-        
+        <variablelist>
+          <varlistentry>
+            <term>Avoid JSONP pattern for cross-origin resource sharing</term>
+            <listitem>
+              <para>
+                JSONP pattern emerged as a workaround of Same Origin Policy in case web application needs to share resources across domains. Such approach creates a big attack surface and JSONP hijacking is dangerous even for application that don't use JSONP pattern, but return JavaScript content on GET requests (see <xref linkend="JSONP"/>).
+              </para>
+            </listitem>
+          </varlistentry>
+          <varlistentry>
+            <term>Use SSL for all connections and use HSTS to enforce it</term>
+            <listitem>
+              <para>Using non-SSL connection is a serious weakness of web application with regards to network attackers. Enforcing SSL connection by redirection is often insufficient too, and it is desirable to add HSTS header to SSL enabled web applications (see <xref linkend="HSTS"/>).</para>
+            </listitem>
+          </varlistentry>
+          <varlistentry>
+            <term>Use Content Security Policy</term>
+            <listitem>
+              <para>Content Security Policy is quickly becoming standardized and provides a robust solution against XSS attacks and untrusted content loaded in the context of web page in general. Adopting it requires a web application to be compliant and enforces already accepted good practices with regards to script inlining (see <xref linkend="CSP"/>).</para>
+            </listitem>
+          </varlistentry>
+          <varlistentry>
+            <term>Use experimental security related headers for additional hardening</term>
+            <listitem>
+              <para>
+                Several non-standard HTTP headers that control implementation-specific behaviour of some user agents can be used to provide additional hardening of web application. These include <constant>X-Frame-Options</constant>, <constant>X-XSS-Protection</constant> and <constant>X-Content-Type-Options</constant> (see <xref linkend="HTTP_headers"/>). In case of CSP <constant>X-WebKit-CSP</constant> and <constant>X-Content-Security-Policy</constant> can be used to provide better compatibility with older Mozilla and WebKit-based browsers (see <xref linkend="CSP"/>).
+              </para>
+            </listitem>
+          </varlistentry>
+        </variablelist>
       </para>
     </section>
 
