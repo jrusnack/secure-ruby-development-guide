@@ -747,6 +747,17 @@ X-Content-Type-Options: nosniff
       <title>Strict-Transport-Security</title>
       <para>This header is part of HTTP Strict Transport Security described in <xref linkend='HSTS'/>. Using it server indicates that any requests from client shall be made through secure SSL connection and such policy be enforced for a declared timespan.</para>
     </section>
+    <section>
+      <title>Additional resources</title>
+      <itemizedlist>
+        <listitem>
+          <para>
+             Veracode: Guidelines for Setting Security Headers <ulink url="https://blog.veracode.com/2014/03/guidelines-for-setting-security-headers/">https://blog.veracode.com/2014/03/guidelines-for-setting-security-headers/</ulink>
+          </para>
+        </listitem>
+      </itemizedlist>
+    </section>
+
   </section>
 
   <section>
