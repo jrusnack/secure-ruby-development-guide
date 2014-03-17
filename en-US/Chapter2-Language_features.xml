@@ -205,6 +205,8 @@ NameError: uninitialized constant Module::MY_SYMBOL
     <para>
       Array of all currently defined symbols is available through <command>Symbol.all_symbols</command> class method.
     </para>
+
+    <para>Starting from Ruby 2.2, a new method <command>Symbol.find?</command> will be added, that allows to check for existence of a Symbol without defining it. Starting from Ruby 2.0, method <command>rb_check_id</command> is also available to Ruby C extensions, which returns 0 when String passed as argument is not already defined as Symbol. This makes overriding default intern methods possible (see gem <ulink url="https://github.com/phluid61/symbol_lookup-gem">SymbolLookup</ulink>)</para>
   </section>
 
 
