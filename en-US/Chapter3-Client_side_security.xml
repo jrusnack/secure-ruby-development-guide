@@ -515,13 +515,13 @@ Content-Security-Policy-Report-Only: ...; report-uri /csp_report_parser;
       <title>References</title>
       <itemizedlist>
         <listitem>
-          <para>W3C Content Security Policy 1.0 <ulink url="http://www.w3.org/TR/CSP/">http://www.w3.org/TR/CSP/</ulink></para>
+          <para>W3C Content Security Policy 1.0: <ulink url="http://www.w3.org/TR/CSP/">http://www.w3.org/TR/CSP/</ulink></para>
         </listitem>
         <listitem>
-          <para>HTML5Rocks tutorial <ulink url="http://www.html5rocks.com/en/tutorials/security/content-security-policy/">http://www.html5rocks.com/en/tutorials/security/content-security-policy/</ulink></para>
+          <para>HTML5Rocks tutorial: <ulink url="http://www.html5rocks.com/en/tutorials/security/content-security-policy/">http://www.html5rocks.com/en/tutorials/security/content-security-policy/</ulink></para>
         </listitem>
         <listitem>
-          <para>GitHub blog on CSP <ulink url="https://github.com/blog/1477-content-security-policy">https://github.com/blog/1477-content-security-policy</ulink></para>
+          <para>GitHub blog on CSP: <ulink url="https://github.com/blog/1477-content-security-policy">https://github.com/blog/1477-content-security-policy</ulink></para>
         </listitem>
       </itemizedlist>
     </section>
@@ -593,67 +593,19 @@ config.force_ssl = true
       <title>References</title>
       <itemizedlist>
         <listitem>
-          <para>RFC 6797 <ulink url="http://tools.ietf.org/html/rfc6797">http://tools.ietf.org/html/rfc6797</ulink></para>
+          <para>RFC 6797: <ulink url="http://tools.ietf.org/html/rfc6797">http://tools.ietf.org/html/rfc6797</ulink></para>
         </listitem>
         <listitem>
-          <para>Mozilla: Preloading HSTS <ulink url="https://blog.mozilla.org/security/2012/11/01/preloading-hsts/">https://blog.mozilla.org/security/2012/11/01/preloading-hsts/</ulink></para>
+          <para>Mozilla - Preloading HSTS: <ulink url="https://blog.mozilla.org/security/2012/11/01/preloading-hsts/">https://blog.mozilla.org/security/2012/11/01/preloading-hsts/</ulink></para>
         </listitem>
         <listitem>
-          <para>Chromium: list of preloaded  known  HSTS  hosts <ulink url="https://src.chromium.org/viewvc/chrome/trunk/src/net/http/transport_security_state_static.json">https://src.chromium.org/viewvc/chrome/trunk/src/net/http/transport_security_state_static.json</ulink></para>
+          <para>Chromium - list of preloaded  known  HSTS  hosts: <ulink url="https://src.chromium.org/viewvc/chrome/trunk/src/net/http/transport_security_state_static.json">https://src.chromium.org/viewvc/chrome/trunk/src/net/http/transport_security_state_static.json</ulink></para>
         </listitem>
       </itemizedlist>
     </section>
   </section>
 
-  <section id="HTTP_headers">
-    <title>Security related HTTP headers</title>
-    <para>
-      There are several HTTP headers that increase security of web application in various ways. Below is non-exhaustive list of most important ones, some of which were already mentioned and explained in previous sections:
-    </para>
-    <section>
-      <title>X-Frame-Options</title>
-      <para>
-        X-Frame-Options header can be used by server to indicate that page returned shall not be rendered inside <command>&lt;frame&gt;</command> and <command>&lt;iframe&gt;</command> tags and sites can use this as a defense from clickjacking attacks.
-      </para>
-      <para>
-
-        <variablelist>
-          <varlistentry>
-            <term>DENY</term>
-            <listitem>
-              <para>Content of the page shall not be displayed in a frame regardless of the origin of the page attempting to do so.</para>
-            </listitem>
-          </varlistentry>
-          <varlistentry>
-            <term>SAMEORIGIN</term>
-            <listitem>
-              <para>Content of the page can be embedded only in a page with the same origin as the page itself.</para>
-            </listitem>
-          </varlistentry>
-          <varlistentry>
-            <term>ALLOW-FROM</term>
-            <listitem>
-              <para>Content of the page can be embedded only in a page with top level origin specified by this option.</para>
-            </listitem>
-          </varlistentry>
-        </variablelist>
-      </para>
-      <para>
-        The header returned from server allowing content to be embedded within https://example.com/ looks like this
-        <programlisting>
-X-Frame-Options: ALLOW-FROM https://example.com/
-        </programlisting>
-      </para>
-      <section>
-        <title>References</title>
-        <itemizedlist>
-          <listitem>
-            <para>RFC 7034 <ulink url="http://tools.ietf.org/html/rfc7034">http://tools.ietf.org/html/rfc7034</ulink></para>
-          </listitem>
-        </itemizedlist>
-      </section>
-    </section>
-    <section>
+  <section>
       <title>X-XSS-Protection</title>
       <para>
         Modern browsers usually come with built-in XSS filter, that is enabled by default. Originally IE 8 introduced new XSS filter and this header was created to give web application developers way to turn this feature off in case it breaks functionality of the web application for users. Later this concept was also adpoted by Webkit, which implements its own XSS filter.
@@ -706,7 +658,51 @@ X-XSS-Protection: 1; mode=block
         </itemizedlist>
       </section>
     </section>
+
     <section>
+      <title>X-Frame-Options</title>
+      <para>
+        X-Frame-Options header can be used by server to indicate that page returned shall not be rendered inside <command>&lt;frame&gt;</command> and <command>&lt;iframe&gt;</command> tags and sites can use this as a defense from clickjacking attacks.
+      </para>
+      <para>
+
+        <variablelist>
+          <varlistentry>
+            <term>DENY</term>
+            <listitem>
+              <para>Content of the page shall not be displayed in a frame regardless of the origin of the page attempting to do so.</para>
+            </listitem>
+          </varlistentry>
+          <varlistentry>
+            <term>SAMEORIGIN</term>
+            <listitem>
+              <para>Content of the page can be embedded only in a page with the same origin as the page itself.</para>
+            </listitem>
+          </varlistentry>
+          <varlistentry>
+            <term>ALLOW-FROM</term>
+            <listitem>
+              <para>Content of the page can be embedded only in a page with top level origin specified by this option.</para>
+            </listitem>
+          </varlistentry>
+        </variablelist>
+      </para>
+      <para>
+        The header returned from server allowing content to be embedded within https://example.com/ looks like this
+        <programlisting>
+X-Frame-Options: ALLOW-FROM https://example.com/
+        </programlisting>
+      </para>
+      <section>
+        <title>References</title>
+        <itemizedlist>
+          <listitem>
+            <para>RFC 7034: <ulink url="http://tools.ietf.org/html/rfc7034">http://tools.ietf.org/html/rfc7034</ulink></para>
+          </listitem>
+        </itemizedlist>
+      </section>
+    </section>
+    <section id="X-Content-Type-Options">
       <title>X-Content-Type-Options</title>
       <para>
         To provide better compatibility modern browesers usually come with a content-type sniffing algorithm, which allows them to infer content type of file by inspecting its content. This is useful in cases when HTTP reponse does not include Content-Type header or if its mismatched. By correctly rendering the content and ignoring mismatched MIME type browser gains competitive advantage over other browser who do not render such file correctly. 
@@ -729,36 +725,12 @@ X-Content-Type-Options: nosniff
         <itemizedlist>
           <listitem>
             <para>
-               Internet Explorer Dev Center: Reducing MIME type security risks <ulink url="http://msdn.microsoft.com/en-us/library/ie/gg622941">http://msdn.microsoft.com/en-us/library/ie/gg622941</ulink>
+               Internet Explorer Dev Center - Reducing MIME type security risks: <ulink url="http://msdn.microsoft.com/en-us/library/ie/gg622941">http://msdn.microsoft.com/en-us/library/ie/gg622941</ulink>
             </para>
           </listitem>
         </itemizedlist>
       </section>
     </section>
-    <section>
-      <title>Content-Security-Policy</title>
-      <para>This header allows server specify Content Security Policy and enable user agent to block content from untrusted sources - see <xref linkend='CSP'/></para>
-    </section>
-    <section>
-      <title>Access-Control-Allow-Origin</title>
-      <para>This response header is part of the implemetation of Cross Origin Resource Sharing described in <xref linkend='CORS'/>. Via this header server explicitly tells client`s browser whether cross-domain access to resource shall be permitted for the Origin specified.</para>
-    </section>
-    <section>
-      <title>Strict-Transport-Security</title>
-      <para>This header is part of HTTP Strict Transport Security described in <xref linkend='HSTS'/>. Using it server indicates that any requests from client shall be made through secure SSL connection and such policy be enforced for a declared timespan.</para>
-    </section>
-    <section>
-      <title>Additional resources</title>
-      <itemizedlist>
-        <listitem>
-          <para>
-             Veracode: Guidelines for Setting Security Headers <ulink url="https://blog.veracode.com/2014/03/guidelines-for-setting-security-headers/">https://blog.veracode.com/2014/03/guidelines-for-setting-security-headers/</ulink>
-          </para>
-        </listitem>
-      </itemizedlist>
-    </section>
-
-  </section>
 
   <section>
     <title>Configuring Rails</title>
@@ -858,7 +830,7 @@ end
           <term>Use experimental security related headers for additional hardening</term>
           <listitem>
             <para>
-              Several non-standard HTTP headers that control implementation-specific behaviour of some user agents can be used to provide additional hardening of web application. These include <constant>X-Frame-Options</constant>, <constant>X-XSS-Protection</constant> and <constant>X-Content-Type-Options</constant> (see <xref linkend="HTTP_headers"/>). In case of CSP <constant>X-WebKit-CSP</constant> and <constant>X-Content-Security-Policy</constant> can be used to provide better compatibility with older Mozilla and WebKit-based browsers (see <xref linkend="CSP"/>).
+              Several non-standard HTTP headers that control implementation-specific behaviour of some user agents can be used to provide additional hardening of web application. These include <constant>X-Frame-Options</constant>, <constant>X-XSS-Protection</constant> and <constant>X-Content-Type-Options</constant> (see <xref linkend="X-Content-Type-Options"/>). In case of CSP <constant>X-WebKit-CSP</constant> and <constant>X-Content-Security-Policy</constant> can be used to provide better compatibility with older Mozilla and WebKit-based browsers (see <xref linkend="CSP"/>).
             </para>
           </listitem>
         </varlistentry>

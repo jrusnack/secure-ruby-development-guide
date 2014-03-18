@@ -1,6 +1,6 @@
 all: build
 
-.PHONY: all build
+.PHONY: all build build-html build-pdf build-epub clean upload
 
 build:
 	publican build --formats=html,pdf,epub --langs=en-US --config=publican.cfg
