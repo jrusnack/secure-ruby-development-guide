@@ -80,6 +80,9 @@ being equal, more complex code will have more weaknesses than simpler one.
       <para>
         <ulink url="https://github.com/appfolio/gemsurance">gemsurance</ulink> also works on top of rubysec-db. Unlike bundler-audit it outputs html report and lists outdated gems as well. Another useful feature is possibility to integrate the check with RSpec and make your tests fail whenever vulnerable dependency is detected.
       </para>
+      <para>
+        Other gems or services that provide similar functionality include <ulink url="https://github.com/jsuder/holepicker">HolePicker</ulink> and <ulink url="https://gemcanary.com/">gemcanary</ulink>.
+      </para>
       <important>
         <para>
           It is highly recommended to set up automated checks for outdated dependencies.
