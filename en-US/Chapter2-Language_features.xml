@@ -152,7 +152,7 @@ sys.call DL::CPtr[input].to_i
     </section>
   </section>
 
-  <section>
+  <section id="dangerous_methods">
     <title>Dangerous methods</title>
     <para>
       Ruby contains number of methods and modules that should be used with caution, since calling them with input potentially controlled by attacker might be abused into arbitrary code execution. These include:

@@ -129,7 +129,43 @@ GET /controller/action?id[]=1 = 1);UPDATE users SET password_digest='my_digest' 
         </para>
       </section>
     </section>
-    
+
+    <section>
+      <title>OS command injection</title>
+      <para>
+        Another common vulnerability is invoking underlying OS commands with user supplied input without proper sanitization. Ruby provides several commands that can be used and if user's input is used as parameter to a system command without sanitization, he might be able to misuse it to execute arbitrary command.
+      </para>
+      <para>
+        For example, when application contains call like
+        <programlisting language="Ruby">
+system "echo Hello #{params[:name]}!"
+        </programlisting>
+
+        user can use semicolon to terminate <command>echo</command> command and invoke command of his choice:
+        <programlisting language="Ruby">
+>> params[:name] = 'Joe;rm -rf /'
+=> "Joe;touch /tmp/abc"
+>> system "echo Hello #{params[:name]}"
+Hello Joe
+=> true        # and rm gets executed
+        </programlisting> 
+      </para>
+      <para>
+        <command>system</command> command can be used to explicitly separate OS command to invoke from the arguments passed to it:
+        <programlisting language="Ruby">
+system(command, *parameters)
+        </programlisting>
+      </para>
+      <important>
+        <para>
+          Whenever system command is executed with arguments from untrusted source, extra care must be taken to prevent arbitrary code execution.
+        </para>
+      </important>
+      <para>
+        Also see <xref linkend="dangerous_methods"/>.
+      </para>
+    </section>
+
     <section>
       <title>References</title>
       <itemizedlist>
