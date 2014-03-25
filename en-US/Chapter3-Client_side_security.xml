@@ -775,7 +775,7 @@ gem 'secure_headers'
       enable its  functionality by adding <constant>ensure_security_headers</constant> directive to ApplicationController:
       <programlisting language="Ruby">
 class ApplicationController &lt; ActionController::Base
-ensure_security_headers
+  ensure_security_headers
 end
       </programlisting>
     </para>

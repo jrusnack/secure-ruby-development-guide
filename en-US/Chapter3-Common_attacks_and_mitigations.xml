@@ -1,0 +1,166 @@
+<?xml version='1.0' encoding='utf-8' ?>
+<!DOCTYPE chapter PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN" "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd" [
+<!ENTITY % BOOK_ENTITIES SYSTEM "Secure_Ruby_Development_Guide.ent">
+%BOOK_ENTITIES;
+]>
+<section>
+  <title>Common attacks and mitigations</title>
+  <section>
+    <title>Cross site scripting (XSS)</title>
+    <para></para>
+  </section>
+
+  <section>
+    <title>Cross site request forgery (CSRF)</title>
+    <para></para>
+  </section>
+
+  <section>
+    <title>Command injection</title>
+    <para>
+      One of the most widespread types of attack is command injection attack, where data from untrusted source are being used by application to construct a command. The command is executed in the context of application and when the untrusted data is not sanitized properly, attacker might use this weakness to execute arbitrary command, potentially with elevated privileges.
+    </para>
+
+    <section>
+      <title>SQL injection</title>
+      <para>
+        SQL injection is the most common type of command injection, where application constructs a SQL query from user supplied data. If not properly escaped, malicious attacker might be able to execute any SQL command on application's database, that can lead to information disclosure, unauthorized modification of data, execution of administrative operations or destruction of data.
+      </para>
+
+      <para>
+        Ruby on Rails provides a good protection against SQL injection attacks by escaping several special SQL characters by default. However, this is far from making Rails applications safe against SQL injection. Consider a query against database:
+        <programlisting language="Ruby">
+User.where("name = '#{params[:name]}'")
+        </programlisting>
+
+        This would be translated to following SQL query:
+
+        <programlisting>
+SELECT "users".* FROM "users" WHERE (name = 'username')
+        </programlisting>
+
+        Such statement is vulnerable to SQL injection, since part of the SQL statement is passed as string in argument and Rails does not perform any escaping. Malicious string can match apostrophe and bracket in the statement, the follow with semicolon as statement separator and arbitrary SQL query. At the end double hyphens are necessary to comment out superfluous apostrophe:
+        <programlisting>
+>> params[:name] = "'); &lt;arbitrary statement&gt; --"
+        </programlisting>
+
+        Using Rails console we can see this how such input is translated to a SQL query:
+
+        <programlisting language="Ruby">
+>> params[:name] = "noname'); SELECT name, password_digest FROM users where userid = 'admin' --"
+=> "noname'); SELECT name, password_digest FROM users where userid = 'admin' --"
+
+>> User.where("name = '#{params[:name]}'")
+  User Load (2.4ms)  SELECT "users".* FROM "users" WHERE (name = 'noname'); SELECT name, password_digest FROM users where userid = 'admin' --')
+=> [#&lt;User name: "Administrator", password_digest: "$2a$10$m7XI628GGkdTH1JmkdMfluJyA360V1.QBtSbFMrc5Jwm..."&gt;]
+        </programlisting>
+      </para>
+      <section>
+        <title>(Un)safe Active Record queries</title>
+        <para>
+          Safer approach is to pass either array or hash as an argument and use Rails escaping mechanism to protect against SQL, as in
+          <programlisting language="Ruby">
+User.where("name = ?", params[:name])
+          </programlisting>
+          or 
+          <programlisting language="Ruby">
+User.where(name: params[:name])
+          </programlisting>
+        </para>
+        <para>
+          Alternatively, ActiveRecord also provides <command>ActiveRecord::sanitize</command> method which can be used to sanitize a string explicitly. 
+        </para>
+        <para>
+          However, other ActiveRecord methods may be vulnerable to surprising SQL injection attacks, too. Consider <command>exists?</command> - when given string as an argument, it tries to convert it to integer, returning 0 when the conversion is impossible:
+          <programlisting language="Ruby">
+>> User.exists?("1")
+  User Exists (0.9ms)  SELECT 1 AS one FROM "users" WHERE "users"."id" = 1 LIMIT 1
+=> true
+
+>> User.exists?("abc")
+  User Exists (0.8ms)  SELECT 1 AS one FROM "users" WHERE "users"."id" = 0 LIMIT 1
+=> false
+          </programlisting>
+        </para>
+        <para>
+          This might look like a safe behaviour and imply the following query is safe from SQL injection attack:
+          <programlisting language="Ruby">
+User.exists?(params[:id])
+          </programlisting>
+        </para>
+        <para>
+          The <command>exists?</command> method also accepts  array as an argument - in which case first element of array is used directly in SQL query without escaping:
+          <programlisting language="Ruby">
+>> params[:id] = ["id = '1'"]
+=> ["id = '1'"]
+
+>> User.exists?(params[:id])
+  User Exists (0.8ms)  SELECT 1 AS one FROM "users" WHERE (id = '1') LIMIT 1
+=> true
+          </programlisting>
+        </para>
+        <para>
+          This makes SQL injection attack possible:
+          <programlisting language="Ruby">
+>> params[:id] = ["1=1);UPDATE users SET password_digest='my_digest' WHERE userid='admin' --"]
+=> ["1=1);UPDATE users SET password_digest='my_digest' WHERE userid='admin' --"]
+
+>> User.exists?(params[:id])
+  User Exists (67.6ms)  SELECT 1 AS one FROM "users" WHERE (1=1);UPDATE users SET password_digest='my_digest' WHERE userid='admin' --) LIMIT 1
+=> false
+
+>> User.where(userid: 'admin').first.password_digest
+  User Load (1.0ms)  SELECT "users".* FROM "users" WHERE "users"."userid" = 'admin' LIMIT 1
+  User Inst (0.4ms - 1rows)
+=> "my_digest"
+          </programlisting>
+        </para>
+        <para>
+          The last obstacle is passing the user supplied parameter as an Array. Usually, all values of parameters are passed by Rack as strings, but it is also possible to explicitly specify that value of parameter is supposed to be Array in the HTTP request. If the parameter looks like 
+          <programlisting>
+key[]=value
+          </programlisting>
+        </para>
+        <para>
+          Rack assumes it should be an Array and performs conversion before the parameter is passed to Rails application. HTTP request that exploits <command>exists?</command> method called on <constant>params[:id]</constant> then looks like this:
+          <programlisting>
+GET /controller/action?id[]=1 = 1);UPDATE users SET password_digest='my_digest' WHERE userid='admin' --
+          </programlisting>
+        </para>
+      </section>
+    </section>
+    
+    <section>
+      <title>References</title>
+      <itemizedlist>
+        <listitem>
+          <para>Ruby on Rails Security Guide - SQL injection: <ulink url="http://guides.rubyonrails.org/security.html#sql-injection">http://guides.rubyonrails.org/security.html#sql-injection</ulink></para>
+        </listitem>
+        <listitem>
+          <para>Rails SQL Injection: <ulink url="http://rails-sqli.org/">http://rails-sqli.org/</ulink></para>
+        </listitem>
+        <listitem>
+          <para>OWASP SQL Injection: <ulink url="https://owasp.org/index.php/SQL_Injection">https://owasp.org/index.php/SQL_Injection</ulink></para>
+        </listitem>
+        <listitem>
+          <para>CWE-89: Improper Neutralization of Special Elements used in an SQL Command ('SQL Injection'): <ulink url="http://cwe.mitre.org/data/definitions/89.html">http://cwe.mitre.org/data/definitions/89.html</ulink></para>
+        </listitem>
+        <listitem>
+          <para>CWE-77: Improper Neutralization of Special Elements used in a Command ('Command Injection'): <ulink url="http://cwe.mitre.org/data/definitions/77.html">http://cwe.mitre.org/data/definitions/77.html</ulink></para>
+        </listitem>
+
+      </itemizedlist>
+    </section>
+  </section>
+
+
+  <section>
+    <title>Cross site tracing (XST)</title>
+    <para></para>
+  </section>
+
+  <section>
+    <title>Guidelines and principles</title>
+    <para></para>
+  </section>
+</section>

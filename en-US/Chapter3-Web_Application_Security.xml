@@ -27,39 +27,7 @@
     </para>
   </section>
 
-  <section>
-    <title>Common attacks and mitigations</title>
-    <section>
-      <title>Cross site scripting (XSS)</title>
-      <para></para>
-    </section>
-
-    <section>
-      <title>Cross site request forgery (CSRF)</title>
-      <para></para>
-    </section>
-
-    <section>
-      <title>SQL injection attack</title>
-      <para></para>
-    </section>
-
-    <section>
-      <title>LDAP injection attack</title>
-      <para></para>
-    </section>
-
-    <section>
-      <title>Cross site tracing (XST)</title>
-      <para></para>
-    </section>
-
-    <section>
-      <title>Guidelines and principles</title>
-      <para></para>
-    </section>
-  </section>
-
+  <xi:include href="Chapter3-Common_attacks_and_mitigations.xml" xmlns:xi="http://www.w3.org/2001/XInclude" />
   <xi:include href="Chapter3-Client_side_security.xml" xmlns:xi="http://www.w3.org/2001/XInclude" />
 
   <section>
