@@ -12,7 +12,99 @@
 
   <section>
     <title>Cross site request forgery (CSRF)</title>
-    <para></para>
+    <para>
+      By default, browsers include user's authentication tokens (such as cookies, HTTP basic authentication credentials etc.) with every request to the web application. This allows client to authenticate once and each following request to the web application will be authenticated without prompting the user for credentials. However, this gives client's browser ability to make authenticated requests on behalf of the user without user's explicit consent.
+    </para>
+
+    <para>
+      This behaviour can be misused by the attacker to confuse client's browser into issuing an authenticated request. For example, if attacker's website contains this simple script tag
+    </para>
+
+    <programlisting>
+&lt;script src="http://victimbank.com/transfermoney?to=attacker&amp;amount=1000"/&gt;
+    </programlisting>
+
+    <para>
+      browser will issue a HTTP GET request to victimbank.com with parameters supplied by the attacker. The browser does not know anything about the resource that is being requested by the attacker's site - whether it is malicious of harmless - and it requests the script from the specified URL. If the user is authenticated at that moment, browser will also include his credentials, so the request would look like this:
+    </para>
+
+    <programlisting>
+GET /transfermoney?to=attacker&amp;amount=1000 HTTP/1.1
+Host: victimbank.com
+Cookie: ...
+    </programlisting>
+    <para>
+      Even though browser believes it is asking for a resource, web application will perform action specified in the request from  the client - in this case, send money to the attacker. Such web application is vulnerable to Cross Site Request Forgery.
+    </para>
+
+    <important>
+      <para>
+        Web application should not change state or perform security sensitive actions upon receiving HTTP GET requests. Such behaviour is not compliant with HTTP and may create problems with caches, browser prefetching etc. 
+      </para>
+      <para>
+      </para>
+      <para>
+        It is not enough to make sure that web application does not use HTTP GET requests to perform security sensitive actions - it is important that such requests are forbidden by the application. For example, Rails application's action can be invoked only with non-GET requests throughout the application, but still be routable through GET requests. 
+      </para>
+    </important>
+
+    <para>
+      Restricting security-sensitive operations to non-GET requests does not protect from CSRF attack itself. Even though common HTTP tags like <constant>&lt;img&gt;</constant>, <constant>&lt;script&gt;</constant> and others can be used to issue HTTP GET requests, there are other means to issue arbitrary requests against vulnerable application. 
+    </para>
+    <para>
+      As example consider the code below:
+    </para>
+    <programlisting>
+&lt;body onload="document.getElementById('f').submit()"&gt;
+  &lt;form id="f" action="http://victimbank.com/transfermoney" method="post" name="form1"&gt;
+    &lt;input name="to" value="attacker"&gt;
+    &lt;input name="amount" value="1000"&gt;
+  &lt;/form&gt;
+&lt;/body&gt;
+    </programlisting>
+
+    <para>
+      If user visits page containing a code similar to this one, upon loading the page browser will send a HTTP POST request with the parameters supplied by the attacker. 
+    </para>
+    <para>
+      There are several mechanisms available, that allow web application to identify requests issued by a third-party web page from the client's browser.
+    </para>
+    <section>
+      <title>Synchronizer token pattern</title>
+      <para></para>
+    </section>
+    <section>
+      <title>Double submit cookie pattern</title>
+      <para></para>
+    </section>
+    <section>
+      <title>Encrypted token pattern</title>
+      <para></para>
+    </section>
+    <section>
+      <title>Checking referer header</title>
+      <para></para>
+    </section>
+    <section>
+      <title>Challenge-response</title>
+      <para></para>
+    </section>
+
+    <section>
+      <title>References</title>
+      <itemizedlist>
+
+        <listitem>
+          <para>OWASP - Cross Site Request Forgery: <ulink url="https://www.owasp.org/index.php/Cross-Site_Request_Forgery_%28CSRF%29">https://www.owasp.org/index.php/Cross-Site_Request_Forgery_%28CSRF%29</ulink></para>
+        </listitem>
+        <listitem>
+          <para>OWASP - CSRF Prevention cheat sheet: <ulink url="https://www.owasp.org/index.php/Cross-Site_Request_Forgery_%28CSRF%29_Prevention_Cheat_Sheet">https://www.owasp.org/index.php/Cross-Site_Request_Forgery_%28CSRF%29_Prevention_Cheat_Sheet</ulink></para>
+        </listitem>
+        <listitem>
+          <para>CWE-352: Cross-Site Request Forgery (CSRF) <ulink url="https://cwe.mitre.org/data/definitions/352.html">https://cwe.mitre.org/data/definitions/352.html</ulink></para>
+        </listitem>
+      </itemizedlist>
+    </section>
   </section>
 
   <section>
