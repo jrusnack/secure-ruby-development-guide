@@ -75,7 +75,7 @@ Cookie: ...
         OWASP recommended method of CSRF protection is to include a challenge token in each sensitive request. The token must be unpredictable to the attacker, otherwise the attacker could guess it and include with his forged request. The token must also be tied to user's session - if the token is shared by users, they would be able to forge requests on behalf of others. It goes without saying that it cannot be part of the authentication tokens, since they are sent with each request automatically, which defeats the purpose of CSRF protection. However, this token needs to be generated only once per each session.
       </para>
       <para>
-        The CSRF challenge token should be included in all non-GET requests, including Ajax requests. On the server side, application has to verify the token is included in request and is valid, and reset session otherwise. 
+        The CSRF challenge token should be included in all non-GET requests, including Ajax requests. On the server side, application has to verify the token is included in request and is valid, and reset session otherwise.
       </para>
 
       <para>
@@ -101,18 +101,29 @@ end
         If this does not effectively log out user due to application-specific behaviour, developers should redefine <constant>handle_unverified_token</constant>.
       </para>
       <para>
-        The disadvantage of synchronizer token pattern is the need to rememnber the challenge token for each session on the server side. 
+        The disadvantage of synchronizer token pattern is the need to rememnber the challenge token for each session on the server side.
       </para>
     </section>
     <section>
       <title>Double submit cookie pattern</title>
       <para>
-        
+        This method mitigates the problem of keeping state on the server side. Each sensitive request shall include a random value twice: in cookie, and as a request parameter. After receiving request, server verified that both values are equal, so this mechanism is stateless. 
+      </para>
+      <para>
+        Assuming the random value meets the requirements on CSRF token, attacker cannot forge the CSRF requests. To do that, he would need an access to random value stored in a cookie of another site, which is prevented by Same Origin Policy. 
+      </para>
+      <para>
+        This mechanism is arguably less secure than synchronizer token pattern. While it is hard for the attacker to read the random value from cookie, it is easier to write a value, for example by writing an attacker-specified value from a subdomain. 
       </para>
     </section>
     <section>
       <title>Encrypted token pattern</title>
-      <para></para>
+      <para>
+        Another stateless approach leverages encryption. The token sent by the server is triple User ID, Timestamp and Nonce, encrypted with server-side secret key. The token sent to the client in a hidden field, and returned by the client in a custom header field for Ajax requests or as a parameter for form-based requests. 
+      </para>
+      <para>
+        Validation of token does not require any state on the server side aside from secret key. Upon receiving request, server decrypts the token and verifies User ID against session's User ID (if there is one) and Timestamp to prevent replay attacks. If decryption of the token yields malformed data or any of the checks fails, server blocks the potential attack.
+      </para>
     </section>
     <section>
       <title>Checking referer header</title>
