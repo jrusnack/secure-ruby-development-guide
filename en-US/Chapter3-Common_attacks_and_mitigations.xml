@@ -64,18 +64,51 @@ Cookie: ...
     </programlisting>
 
     <para>
-      If user visits page containing a code similar to this one, upon loading the page browser will send a HTTP POST request with the parameters supplied by the attacker. 
+      If user visits page containing a code similar to this one, upon loading the page browser will send a HTTP POST request with the parameters supplied by the attacker.
     </para>
     <para>
       There are several mechanisms available, that allow web application to identify requests issued by a third-party web page from the client's browser.
     </para>
     <section>
       <title>Synchronizer token pattern</title>
-      <para></para>
+      <para>
+        OWASP recommended method of CSRF protection is to include a challenge token in each sensitive request. The token must be unpredictable to the attacker, otherwise the attacker could guess it and include with his forged request. The token must also be tied to user's session - if the token is shared by users, they would be able to forge requests on behalf of others. It goes without saying that it cannot be part of the authentication tokens, since they are sent with each request automatically, which defeats the purpose of CSRF protection. However, this token needs to be generated only once per each session.
+      </para>
+      <para>
+        The CSRF challenge token should be included in all non-GET requests, including Ajax requests. On the server side, application has to verify the token is included in request and is valid, and reset session otherwise. 
+      </para>
+
+      <para>
+        Synchronizer token pattern is also default CSRF protection mechanism for Rails applications. To enable CSRF protection, one has to enable it in application controller with
+
+        <programlisting>
+protect_from_forgery
+        </programlisting>
+
+        which will automatically include CSRF token in all non-get and XHR requests. The token itself is sent by the server in  meta tag of the web page like this:
+        <programlisting>
+&lt;meta content="authenticity_token" name="csrf-param" /&gt;
+&lt;meta content="VBlgpnibfsxm1QykEmlOCbxqLRxx7kDGr57tjE+LLZk=" name="csrf-token" /&gt;
+        </programlisting>
+      </para>
+      <para>
+        If the request is not verified to be CSRF-free, Rails resets the session by default:
+        <programlisting language="Ruby">
+def handle_unverified_request
+  reset_session
+end
+        </programlisting>
+        If this does not effectively log out user due to application-specific behaviour, developers should redefine <constant>handle_unverified_token</constant>.
+      </para>
+      <para>
+        The disadvantage of synchronizer token pattern is the need to rememnber the challenge token for each session on the server side. 
+      </para>
     </section>
     <section>
       <title>Double submit cookie pattern</title>
-      <para></para>
+      <para>
+        
+      </para>
     </section>
     <section>
       <title>Encrypted token pattern</title>
@@ -102,6 +135,9 @@ Cookie: ...
         </listitem>
         <listitem>
           <para>CWE-352: Cross-Site Request Forgery (CSRF) <ulink url="https://cwe.mitre.org/data/definitions/352.html">https://cwe.mitre.org/data/definitions/352.html</ulink></para>
+        </listitem>
+        <listitem>
+          <para>Encrypted Token pattern: <ulink url="http://insidethecpu.wordpress.com/2013/09/23/encrypted-token-pattern/">http://insidethecpu.wordpress.com/2013/09/23/encrypted-token-pattern/</ulink></para>
         </listitem>
       </itemizedlist>
     </section>
