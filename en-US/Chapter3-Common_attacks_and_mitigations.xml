@@ -126,12 +126,23 @@ end
       </para>
     </section>
     <section>
-      <title>Checking referer header</title>
-      <para></para>
-    </section>
-    <section>
-      <title>Challenge-response</title>
-      <para></para>
+      <title>Checking Referer header</title>
+      <para>
+        Checking the Referer header to make sure that request does not originate from the third party site is a common stateless CSRF protection mechanism. Even though it is possible for the user to spoof referer header, it is not possible for the attacker in case of CSRF, since the Referer header is included by the client's browser and outside of attackers control. 
+      </para>
+      <para>
+        Even though it may seem to be the easiest mechanism to implement, it carries a lot of cornercases, depends on configuration outside of applications control and is prone to compatibility issues. 
+      </para>
+      <para>
+        One of the problems of Referer header is potential disclosure of private information, due to which some users may configure their browsers to not include Referer header at all. Referer header is also omitted when browsing from HTTPS secured site to HTTP. Since attacker can mount attack from HTTPS protected page, web application has to deny requests without Referer header. This affects compatibility - for example, when user directly types the URL (or bookmarks it), Referer header will be empty and the application will the refuse request due to CSRF protection, creating usability problems.
+      </para>
+      <para>
+        From implementation standpoint, CSRF check needs to make sure that request originated from a page from trusted domain, however path with parameters do not matter. It is therefore tempting to implement the check by verifying that Referer start with the domain, ignoring the rest of the path. For example, if the Referer is "http://application.domain.com/some/page", the check would verify that it starts with "http://application.domain.com" and allow the request. This can be bypassed if the attacker mounts CSRF attack from "http://application.domain.com.evil.io".
+      </para>
+      <important>
+        <para>
+        Checking the Referer header as CSRF protection mechanism is highly discouraged.</para>
+      </important>
     </section>
 
     <section>
