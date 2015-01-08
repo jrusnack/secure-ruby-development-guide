@@ -279,10 +279,10 @@ $ brakeman -o report.html --path &lt;path to rails app&gt;
     <para>
       Brakeman output contains warnings in format
       <programlisting>
-+------------+-----------+---------+--------------------+------------------------------------------+
-| Confidence | Class     | Method  | Warning Type       | Message                                  |
-+------------+-----------+---------+--------------------+------------------------------------------+
-| High       | Foo       | bar     | Denial of Service  | Symbol conversion from unsafe String ... |
++------------+-------+--------+-------------------+-----------------------------------------+
+| Confidence | Class | Method | Warning Type      | Message                                 |
++------------+-------+--------+-------------------+-----------------------------------------+
+| High       | Foo   | bar    | Denial of Service | Symbol conversion from unsafe String .. |
       </programlisting>
     </para>
     <para>
