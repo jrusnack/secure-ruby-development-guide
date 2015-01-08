@@ -2,3 +2,4 @@
 <!ENTITY BOOKID "Secure_Ruby_Development_Guide">
 <!ENTITY YEAR "2014">
 <!ENTITY HOLDER "Ján Rusnačko">
+<!ENTITY BZURL "<ulink url='https://bugzilla.redhat.com/enter_bug.cgi?product=&PRODUCT;&amp;component=&BOOKID;'>http://bugzilla.redhat.com/</ulink>">
