@@ -5,167 +5,8 @@
 ]>
 <section>
   <title>Common attacks and mitigations</title>
-  <section>
-    <title>Cross site scripting (XSS)</title>
-    <para></para>
-  </section>
 
-  <section>
-    <title>Cross site request forgery (CSRF)</title>
-    <para>
-      By default, browsers include user's authentication tokens (such as cookies, HTTP basic authentication credentials etc.) with every request to the web application. This allows client to authenticate once and each following request to the web application will be authenticated without prompting the user for credentials. However, this gives client's browser ability to make authenticated requests on behalf of the user without user's explicit consent.
-    </para>
-
-    <para>
-      This behaviour can be misused by the attacker to confuse client's browser into issuing an authenticated request. For example, if attacker's website contains this simple script tag
-    </para>
-
-    <programlisting>
-&lt;script src="http://victimbank.com/transfermoney?to=attacker&amp;amount=1000"/&gt;
-    </programlisting>
-
-    <para>
-      browser will issue a HTTP GET request to victimbank.com with parameters supplied by the attacker. The browser does not know anything about the resource that is being requested by the attacker's site - whether it is malicious of harmless - and it requests the script from the specified URL. If the user is authenticated at that moment, browser will also include his credentials, so the request would look like this:
-    </para>
-
-    <programlisting>
-GET /transfermoney?to=attacker&amp;amount=1000 HTTP/1.1
-Host: victimbank.com
-Cookie: ...
-    </programlisting>
-    <para>
-      Even though browser believes it is asking for a resource, web application will perform action specified in the request from  the client - in this case, send money to the attacker. Such web application is vulnerable to Cross Site Request Forgery.
-    </para>
-
-    <important>
-      <para>
-        Web application should not change state or perform security sensitive actions upon receiving HTTP GET requests. Such behaviour is not compliant with HTTP and may create problems with caches, browser prefetching etc. 
-      </para>
-      <para>
-      </para>
-      <para>
-        It is not enough to make sure that web application does not use HTTP GET requests to perform security sensitive actions - it is important that such requests are forbidden by the application. For example, Rails application's action can be invoked only with non-GET requests throughout the application, but still be routable through GET requests. 
-      </para>
-    </important>
-
-    <para>
-      Restricting security-sensitive operations to non-GET requests does not protect from CSRF attack itself. Even though common HTTP tags like <constant>&lt;img&gt;</constant>, <constant>&lt;script&gt;</constant> and others can be used to issue HTTP GET requests, there are other means to issue arbitrary requests against vulnerable application. 
-    </para>
-    <para>
-      As example consider the code below:
-    </para>
-    <programlisting>
-&lt;body onload="document.getElementById('f').submit()"&gt;
-  &lt;form id="f" action="http://victimbank.com/transfermoney" method="post" name="form1"&gt;
-    &lt;input name="to" value="attacker"&gt;
-    &lt;input name="amount" value="1000"&gt;
-  &lt;/form&gt;
-&lt;/body&gt;
-    </programlisting>
-
-    <para>
-      If user visits page containing a code similar to this one, upon loading the page browser will send a HTTP POST request with the parameters supplied by the attacker.
-    </para>
-    <para>
-      There are several mechanisms available, that allow web application to identify requests issued by a third-party web page from the client's browser.
-    </para>
-    <section>
-      <title>Synchronizer token pattern</title>
-      <para>
-        OWASP recommended method of CSRF protection is to include a challenge token in each sensitive request. The token must be unpredictable to the attacker, otherwise the attacker could guess it and include with his forged request. The token must also be tied to user's session - if the token is shared by users, they would be able to forge requests on behalf of others. It goes without saying that it cannot be part of the authentication tokens, since they are sent with each request automatically, which defeats the purpose of CSRF protection. However, this token needs to be generated only once per each session.
-      </para>
-      <para>
-        The CSRF challenge token should be included in all non-GET requests, including Ajax requests. On the server side, application has to verify the token is included in request and is valid, and reset session otherwise.
-      </para>
-
-      <para>
-        Synchronizer token pattern is also default CSRF protection mechanism for Rails applications. To enable CSRF protection, one has to enable it in application controller with
-
-        <programlisting>
-protect_from_forgery
-        </programlisting>
-
-        which will automatically include CSRF token in all non-get and XHR requests. The token itself is sent by the server in  meta tag of the web page like this:
-        <programlisting>
-&lt;meta content="authenticity_token" name="csrf-param" /&gt;
-&lt;meta content="VBlgpnibfsxm1QykEmlOCbxqLRxx7kDGr57tjE+LLZk=" name="csrf-token" /&gt;
-        </programlisting>
-      </para>
-      <para>
-        If the request is not verified to be CSRF-free, Rails resets the session by default:
-        <programlisting language="Ruby">
-def handle_unverified_request
-  reset_session
-end
-        </programlisting>
-        If this does not effectively log out user due to application-specific behaviour, developers should redefine <constant>handle_unverified_token</constant>.
-      </para>
-      <para>
-        The disadvantage of synchronizer token pattern is the need to rememnber the challenge token for each session on the server side.
-      </para>
-    </section>
-    <section>
-      <title>Double submit cookie pattern</title>
-      <para>
-        This method mitigates the problem of keeping state on the server side. Each sensitive request shall include a random value twice: in cookie, and as a request parameter. After receiving request, server verified that both values are equal, so this mechanism is stateless. 
-      </para>
-      <para>
-        Assuming the random value meets the requirements on CSRF token, attacker cannot forge the CSRF requests. To do that, he would need an access to random value stored in a cookie of another site, which is prevented by Same Origin Policy. 
-      </para>
-      <para>
-        This mechanism is arguably less secure than synchronizer token pattern. While it is hard for the attacker to read the random value from cookie, it is easier to write a value, for example by writing an attacker-specified value from a subdomain. 
-      </para>
-    </section>
-    <section>
-      <title>Encrypted token pattern</title>
-      <para>
-        Another stateless approach leverages encryption. The token sent by the server is triple User ID, Timestamp and Nonce, encrypted with server-side secret key. The token sent to the client in a hidden field, and returned by the client in a custom header field for Ajax requests or as a parameter for form-based requests. 
-      </para>
-      <para>
-        Validation of token does not require any state on the server side aside from secret key. Upon receiving request, server decrypts the token and verifies User ID against session's User ID (if there is one) and Timestamp to prevent replay attacks. If decryption of the token yields malformed data or any of the checks fails, server blocks the potential attack.
-      </para>
-    </section>
-    <section>
-      <title>Checking Referer header</title>
-      <para>
-        Checking the Referer header to make sure that request does not originate from the third party site is a common stateless CSRF protection mechanism. Even though it is possible for the user to spoof referer header, it is not possible for the attacker in case of CSRF, since the Referer header is included by the client's browser and outside of attackers control. 
-      </para>
-      <para>
-        Even though it may seem to be the easiest mechanism to implement, it carries a lot of cornercases, depends on configuration outside of applications control and is prone to compatibility issues. 
-      </para>
-      <para>
-        One of the problems of Referer header is potential disclosure of private information, due to which some users may configure their browsers to not include Referer header at all. Referer header is also omitted when browsing from HTTPS secured site to HTTP. Since attacker can mount attack from HTTPS protected page, web application has to deny requests without Referer header. This affects compatibility - for example, when user directly types the URL (or bookmarks it), Referer header will be empty and the application will the refuse request due to CSRF protection, creating usability problems.
-      </para>
-      <para>
-        From implementation standpoint, CSRF check needs to make sure that request originated from a page from trusted domain, however path with parameters do not matter. It is therefore tempting to implement the check by verifying that Referer start with the domain, ignoring the rest of the path. For example, if the Referer is "http://application.domain.com/some/page", the check would verify that it starts with "http://application.domain.com" and allow the request. This can be bypassed if the attacker mounts CSRF attack from "http://application.domain.com.evil.io".
-      </para>
-      <important>
-        <para>
-        Checking the Referer header as CSRF protection mechanism is highly discouraged.</para>
-      </important>
-    </section>
-
-    <section>
-      <title>References</title>
-      <itemizedlist>
-
-        <listitem>
-          <para>OWASP - Cross Site Request Forgery: <ulink url="https://www.owasp.org/index.php/Cross-Site_Request_Forgery_%28CSRF%29">https://www.owasp.org/index.php/Cross-Site_Request_Forgery_%28CSRF%29</ulink></para>
-        </listitem>
-        <listitem>
-          <para>OWASP - CSRF Prevention cheat sheet: <ulink url="https://www.owasp.org/index.php/Cross-Site_Request_Forgery_%28CSRF%29_Prevention_Cheat_Sheet">https://www.owasp.org/index.php/Cross-Site_Request_Forgery_%28CSRF%29_Prevention_Cheat_Sheet</ulink></para>
-        </listitem>
-        <listitem>
-          <para>CWE-352: Cross-Site Request Forgery (CSRF) <ulink url="https://cwe.mitre.org/data/definitions/352.html">https://cwe.mitre.org/data/definitions/352.html</ulink></para>
-        </listitem>
-        <listitem>
-          <para>Encrypted Token pattern: <ulink url="http://insidethecpu.wordpress.com/2013/09/23/encrypted-token-pattern/">http://insidethecpu.wordpress.com/2013/09/23/encrypted-token-pattern/</ulink></para>
-        </listitem>
-      </itemizedlist>
-    </section>
-  </section>
-
-  <section>
+   <section>
     <title>Command injection</title>
     <para>
       One of the most widespread types of attack is command injection attack, where data from untrusted source are being used by application to construct a command. The command is executed in the context of application and when the untrusted data is not sanitized properly, attacker might use this weakness to execute arbitrary command, potentially with elevated privileges.
@@ -339,6 +180,249 @@ system(command, *parameters)
     </section>
   </section>
 
+  <section>
+    <title>Cross site scripting (XSS)</title>
+    <para>Cross site scripting (usually abbreviated as XSS) is a special type of command injection, where attacker supplied malicious payload is interpreted within the context of victim page. The weakness that is a cause for this vulnerability is embedding untrusted data in the web page without sanitization. In the most trivial example, imagine social networking website which displays names of users without sanitization to others. If the name is pasted into resulting page as-is, one can change his name to</para>
+
+    <programlisting>
+&lt;script&gt;alert('Hello');&lt;/script&gt;
+    </programlisting>
+
+    <para>This code embedded in the html sent by the server will be parsed in client's browsers and interpreted as javascript code, which runs and displays a popup with a greeting.</para>
+
+    <section>
+      <title>Types of XSS</title>
+      <para>Over the time XSS attack evolved and based on the way payload is delivered we recognize three types.</para>
+
+      <para><emphasis role="bold">Reflected XSS</emphasis> is the most common type, when data sent by the user is directly embedded into a web page by server and returned back to user. For example think of query parameters which are displayed in a web page:</para>
+
+      <programlisting>
+https://bugzilla.redhat.com/show_bug.cgi?id=&lt;script&gt;alert('Hello')&lt;/script&gt;
+      </programlisting>
+
+      <para>The attack vector in this example is attacker tricking a user into clicking on this malicious URL. If the server returns back user supplied bugzilla ID without escaping, it would get interpreted in the context of bugzilla.redhat.com. Looking at the source of actual response, we find that value provided is escaped:</para>
+      <programlisting>
+'&amp;lt;script&amp;gt;alert(10)&amp;lt;/script&amp;gt;' is not a valid bug number nor an alias to a bug.
+      </programlisting>
+
+      <para>
+        In <emphasis role="bold">Stored XSS</emphasis> the payload is saved on the server and later displayed to the users. Examples include unescaped user profile data on social networking site, unescaped posts on internet forums, unescaped filenames on file sharing sites etc.
+      </para>
+
+      <para>
+        <emphasis role="bold">DOM based XSS</emphasis> is the newest and so far least common type of XSS. With more and more webpage processing moving over to client side in form of javascript code and frameworks, users can browse sites and change them without sending data to be processed by the server. For example hypothetical vulnerable webpage would contain a javascript to display current URL of the page:
+      </para>
+
+      <programlisting>
+&lt;script&gt;
+document.write("URL is: " + document.location.href);
+&lt;script&gt;
+      </programlisting>
+
+      <para>If attacker appends fragment with script to the URL, script running in client's browser would inject URL as-is along with the payload. The URL would look like this:</para>
+
+      <programlisting>
+http://vulnerable.com/#&lt;script&gt;alert('Hello')&lt;/script&gt;
+      </programlisting>
+
+      <para>Note that fragment part of URL is not usually sent to the server in the HTTP request.</para>
+    </section>
+
+    <section>
+      <title>XSS protection in Rails</title>
+      <para></para>
+    </section>
+
+    <section>
+      <title>Real world examples</title>
+      <para></para>
+    </section>
+
+    <section>
+      <title>References</title>
+      <itemizedlist>
+        <listitem>
+          <para>OWASP - Cross-site Scripting: <ulink url="https://www.owasp.org/index.php/Cross-site_Scripting_%28XSS%29">https://www.owasp.org/index.php/Cross-site_Scripting_%28XSS%29</ulink></para>
+        </listitem>
+        <listitem>
+          <para>OWASP - XSS (Cross Site Scripting) Prevention Cheat Sheet: <ulink url="https://www.owasp.org/index.php/XSS_%28Cross_Site_Scripting%29_Prevention_Cheat_Sheet">https://www.owasp.org/index.php/XSS_%28Cross_Site_Scripting%29_Prevention_Cheat_Sheet</ulink></para>
+        </listitem>
+        <listitem>
+          <para>OWASP - Reviewing Code for Cross-site scripting: <ulink url="https://www.owasp.org/index.php/Reviewing_Code_for_Cross-site_scripting">https://www.owasp.org/index.php/Reviewing_Code_for_Cross-site_scripting</ulink></para>
+        </listitem>
+        <listitem>
+          <para>OWASP - DOM Based XSS: <ulink url="https://www.owasp.org/index.php/DOM_Based_XSS">https://www.owasp.org/index.php/DOM_Based_XSS</ulink></para>
+        </listitem>
+        <listitem>
+          <para>OWASP - DOM Based XSS Prevention Cheat Sheet: <ulink url="https://www.owasp.org/index.php/DOM_based_XSS_Prevention_Cheat_Sheet">https://www.owasp.org/index.php/DOM_based_XSS_Prevention_Cheat_Sheet</ulink></para>
+        </listitem>
+        <listitem>
+          <para>OWASP - Testing for Reflected Cross site scripting: <ulink url="https://www.owasp.org/index.php/Testing_for_Reflected_Cross_site_scripting_%28OWASP-DV-001%29">https://www.owasp.org/index.php/Testing_for_Reflected_Cross_site_scripting_%28OWASP-DV-001%29</ulink></para>
+        </listitem>
+        <listitem>
+          <para>OWASP - Testing for Stored Cross site scripting: <ulink url="https://www.owasp.org/index.php/Testing_for_Stored_Cross_site_scripting_%28OWASP-DV-002%29">https://www.owasp.org/index.php/Testing_for_Stored_Cross_site_scripting_%28OWASP-DV-002%29</ulink></para>
+        </listitem>
+        <listitem>
+          <para>OWASP - Testing for DOM-based Cross site scripting: <ulink url="https://www.owasp.org/index.php/Testing_for_DOM-based_Cross_site_scripting_%28OTG-CLIENT-001%29">https://www.owasp.org/index.php/Testing_for_DOM-based_Cross_site_scripting_%28OTG-CLIENT-001%29</ulink></para>
+        </listitem>
+      </itemizedlist>
+    </section>
+  </section>
+
+  <section>
+    <title>Cross site request forgery (CSRF)</title>
+    <para>
+      By default, browsers include user's authentication tokens (such as cookies, HTTP basic authentication credentials etc.) with every request to the web application. This allows client to authenticate once and each following request to the web application will be authenticated without prompting the user for credentials. However, this gives client's browser ability to make authenticated requests on behalf of the user without user's explicit consent.
+    </para>
+
+    <para>
+      This behaviour can be misused by the attacker to confuse client's browser into issuing an authenticated request. For example, if attacker's website contains this simple script tag
+    </para>
+
+    <programlisting>
+&lt;script src="http://victimbank.com/transfermoney?to=attacker&amp;amount=1000"/&gt;
+    </programlisting>
+
+    <para>
+      browser will issue a HTTP GET request to victimbank.com with parameters supplied by the attacker. The browser does not know anything about the resource that is being requested by the attacker's site - whether it is malicious of harmless - and it requests the script from the specified URL. If the user is authenticated at that moment, browser will also include his credentials, so the request would look like this:
+    </para>
+
+    <programlisting>
+GET /transfermoney?to=attacker&amp;amount=1000 HTTP/1.1
+Host: victimbank.com
+Cookie: ...
+    </programlisting>
+    <para>
+      Even though browser believes it is asking for a resource, web application will perform action specified in the request from  the client - in this case, send money to the attacker. Such web application is vulnerable to Cross Site Request Forgery.
+    </para>
+
+    <important>
+      <para>
+        Web application should not change state or perform security sensitive actions upon receiving HTTP GET requests. Such behaviour is not compliant with HTTP and may create problems with caches, browser prefetching etc. 
+      </para>
+      <para>
+      </para>
+      <para>
+        It is not enough to make sure that web application does not use HTTP GET requests to perform security sensitive actions - it is important that such requests are forbidden by the application. For example, Rails application's action can be invoked only with non-GET requests throughout the application, but still be routable through GET requests. 
+      </para>
+    </important>
+
+    <para>
+      Restricting security-sensitive operations to non-GET requests does not protect from CSRF attack itself. Even though common HTTP tags like <constant>&lt;img&gt;</constant>, <constant>&lt;script&gt;</constant> and others can be used to issue HTTP GET requests, there are other means to issue arbitrary requests against vulnerable application. 
+    </para>
+    <para>
+      As example consider the code below:
+    </para>
+    <programlisting>
+&lt;body onload="document.getElementById('f').submit()"&gt;
+  &lt;form id="f" action="http://victimbank.com/transfermoney" method="post" name="form1"&gt;
+    &lt;input name="to" value="attacker"&gt;
+    &lt;input name="amount" value="1000"&gt;
+  &lt;/form&gt;
+&lt;/body&gt;
+    </programlisting>
+
+    <para>
+      If user visits page containing a code similar to this one, upon loading the page browser will send a HTTP POST request with the parameters supplied by the attacker.
+    </para>
+    <para>
+      There are several mechanisms available, that allow web application to identify requests issued by a third-party web page from the client's browser.
+    </para>
+    <section>
+      <title>Synchronizer token pattern</title>
+      <para>
+        OWASP recommended method of CSRF protection is to include a challenge token in each sensitive request. The token must be unpredictable to the attacker, otherwise the attacker could guess it and include with his forged request. The token must also be tied to user's session - if the token is shared by users, they would be able to forge requests on behalf of others. It goes without saying that it cannot be part of the authentication tokens, since they are sent with each request automatically, which defeats the purpose of CSRF protection. However, this token needs to be generated only once per each session.
+      </para>
+      <para>
+        The CSRF challenge token should be included in all non-GET requests, including Ajax requests. On the server side, application has to verify the token is included in request and is valid, and reset session otherwise.
+      </para>
+
+      <para>
+        Synchronizer token pattern is also default CSRF protection mechanism for Rails applications. To enable CSRF protection, one has to enable it in application controller with
+
+        <programlisting>
+protect_from_forgery
+        </programlisting>
+
+        which will automatically include CSRF token in all non-get and XHR requests. The token itself is sent by the server in  meta tag of the web page like this:
+        <programlisting>
+&lt;meta content="authenticity_token" name="csrf-param" /&gt;
+&lt;meta content="VBlgpnibfsxm1QykEmlOCbxqLRxx7kDGr57tjE+LLZk=" name="csrf-token" /&gt;
+        </programlisting>
+      </para>
+      <para>
+        If the request is not verified to be CSRF-free, Rails resets the session by default:
+        <programlisting language="Ruby">
+def handle_unverified_request
+  reset_session
+end
+        </programlisting>
+        If this does not effectively log out user due to application-specific behaviour, developers should redefine <constant>handle_unverified_token</constant>.
+      </para>
+      <para>
+        The disadvantage of synchronizer token pattern is the need to rememnber the challenge token for each session on the server side.
+      </para>
+    </section>
+    <section>
+      <title>Double submit cookie pattern</title>
+      <para>
+        This method mitigates the problem of keeping state on the server side. Each sensitive request shall include a random value twice: in cookie, and as a request parameter. After receiving request, server verified that both values are equal, so this mechanism is stateless. 
+      </para>
+      <para>
+        Assuming the random value meets the requirements on CSRF token, attacker cannot forge the CSRF requests. To do that, he would need an access to random value stored in a cookie of another site, which is prevented by Same Origin Policy. 
+      </para>
+      <para>
+        This mechanism is arguably less secure than synchronizer token pattern. While it is hard for the attacker to read the random value from cookie, it is easier to write a value, for example by writing an attacker-specified value from a subdomain. 
+      </para>
+    </section>
+    <section>
+      <title>Encrypted token pattern</title>
+      <para>
+        Another stateless approach leverages encryption. The token sent by the server is triple User ID, Timestamp and Nonce, encrypted with server-side secret key. The token sent to the client in a hidden field, and returned by the client in a custom header field for Ajax requests or as a parameter for form-based requests. 
+      </para>
+      <para>
+        Validation of token does not require any state on the server side aside from secret key. Upon receiving request, server decrypts the token and verifies User ID against session's User ID (if there is one) and Timestamp to prevent replay attacks. If decryption of the token yields malformed data or any of the checks fails, server blocks the potential attack.
+      </para>
+    </section>
+    <section>
+      <title>Checking Referer header</title>
+      <para>
+        Checking the Referer header to make sure that request does not originate from the third party site is a common stateless CSRF protection mechanism. Even though it is possible for the user to spoof referer header, it is not possible for the attacker in case of CSRF, since the Referer header is included by the client's browser and outside of attackers control. 
+      </para>
+      <para>
+        Even though it may seem to be the easiest mechanism to implement, it carries a lot of cornercases, depends on configuration outside of applications control and is prone to compatibility issues. 
+      </para>
+      <para>
+        One of the problems of Referer header is potential disclosure of private information, due to which some users may configure their browsers to not include Referer header at all. Referer header is also omitted when browsing from HTTPS secured site to HTTP. Since attacker can mount attack from HTTPS protected page, web application has to deny requests without Referer header. This affects compatibility - for example, when user directly types the URL (or bookmarks it), Referer header will be empty and the application will the refuse request due to CSRF protection, creating usability problems.
+      </para>
+      <para>
+        From implementation standpoint, CSRF check needs to make sure that request originated from a page from trusted domain, however path with parameters do not matter. It is therefore tempting to implement the check by verifying that Referer start with the domain, ignoring the rest of the path. For example, if the Referer is "http://application.domain.com/some/page", the check would verify that it starts with "http://application.domain.com" and allow the request. This can be bypassed if the attacker mounts CSRF attack from "http://application.domain.com.evil.io".
+      </para>
+      <important>
+        <para>
+        Checking the Referer header as CSRF protection mechanism is highly discouraged.</para>
+      </important>
+    </section>
+
+    <section>
+      <title>References</title>
+      <itemizedlist>
+
+        <listitem>
+          <para>OWASP - Cross Site Request Forgery: <ulink url="https://www.owasp.org/index.php/Cross-Site_Request_Forgery_%28CSRF%29">https://www.owasp.org/index.php/Cross-Site_Request_Forgery_%28CSRF%29</ulink></para>
+        </listitem>
+        <listitem>
+          <para>OWASP - CSRF Prevention cheat sheet: <ulink url="https://www.owasp.org/index.php/Cross-Site_Request_Forgery_%28CSRF%29_Prevention_Cheat_Sheet">https://www.owasp.org/index.php/Cross-Site_Request_Forgery_%28CSRF%29_Prevention_Cheat_Sheet</ulink></para>
+        </listitem>
+        <listitem>
+          <para>CWE-352: Cross-Site Request Forgery (CSRF) <ulink url="https://cwe.mitre.org/data/definitions/352.html">https://cwe.mitre.org/data/definitions/352.html</ulink></para>
+        </listitem>
+        <listitem>
+          <para>Encrypted Token pattern: <ulink url="http://insidethecpu.wordpress.com/2013/09/23/encrypted-token-pattern/">http://insidethecpu.wordpress.com/2013/09/23/encrypted-token-pattern/</ulink></para>
+        </listitem>
+      </itemizedlist>
+    </section>
+  </section>
 
   <section>
     <title>Cross site tracing (XST)</title>
