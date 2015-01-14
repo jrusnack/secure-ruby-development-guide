@@ -240,15 +240,18 @@ $ bundler_signature_check
           <itemizedlist>
             <listitem>
               <para>
-              Rubygems Security page <ulink url="http://guides.rubygems.org/security/">http://guides.rubygems.org/security/</ulink></para>
+                <ulink url="http://guides.rubygems.org/security/">Rubygems Security page</ulink>
+              </para>
             </listitem>
             <listitem>
               <para>
-              Documentation of <classname>Gem::Security</classname> module  <ulink url="http://rubygems.rubyforge.org/rubygems-update/Gem/Security.html">http://rubygems.rubyforge.org/rubygems-update/Gem/Security.html</ulink></para>
+                <ulink url="http://rubygems.rubyforge.org/rubygems-update/Gem/Security.html">Documentation of <classname>Gem::Security</classname> module</ulink>
+              </para>
             </listitem>
             <listitem>
               <para>
-              Ben Smith`s Hacking with gems presentation <ulink url="http://www.youtube.com/watch?v=z-5bO0Q1J9s">http://www.youtube.com/watch?v=z-5bO0Q1J9s</ulink></para>
+                Ben Smith`s Hacking with gems presentation <ulink url="http://www.youtube.com/watch?v=z-5bO0Q1J9s">on youtube</ulink>
+              </para>
             </listitem>
           </itemizedlist>
         </para>

@@ -385,22 +385,22 @@ end
             <itemizedlist>
               <listitem>
                 <para>
-                  Aaron Patterson's blog <ulink url="http://tenderlovemaking.com/2013/02/06/yaml-f7u12.html">http://tenderlovemaking.com/2013/02/06/yaml-f7u12.html</ulink>
+                  Aaron Patterson's  <ulink url="http://tenderlovemaking.com/2013/02/06/yaml-f7u12.html">blog</ulink>
                 </para>
               </listitem>
               <listitem>
                 <para>
-                  Charlie Sommerville's blog <ulink url="https://charlie.bz/blog/rails-3.2.10-remote-code-execution">https://charlie.bz/blog/rails-3.2.10-remote-code-execution</ulink>
+                  Charlie Sommerville's  <ulink url="https://charlie.bz/blog/rails-3.2.10-remote-code-execution">blog</ulink>
                 </para>
               </listitem>
               <listitem>
                 <para>
-                  Metasploit's blog <ulink url="https://community.rapid7.com/community/metasploit/blog/2013/01/09/serialization-mischief-in-ruby-land-cve-2013-0156">https://community.rapid7.com/community/metasploit/blog/2013/01/09/serialization-mischief-in-ruby-land-cve-2013-0156</ulink>
+                  Metasploit's  <ulink url="https://community.rapid7.com/community/metasploit/blog/2013/01/09/serialization-mischief-in-ruby-land-cve-2013-0156">blog</ulink>
                 </para>
               </listitem>
               <listitem>
                 <para>
-                  Extending Hash <ulink url="http://www.yaml.org/YAML_for_ruby.html#extending_kernel::hash">http://www.yaml.org/YAML_for_ruby.html#extending_kernel::hash</ulink>
+                  <ulink url="http://www.yaml.org/YAML_for_ruby.html#extending_kernel::hash">Extending Hash</ulink>
                 </para>
               </listitem>
             </itemizedlist>

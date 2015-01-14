@@ -13,7 +13,7 @@
     Ruby on Rails as a popular web framework already helps with a web application security by providing secure defaults, useful helper methods, automatic html escaping etc. 
   </para>
 
-  <section>
+  <!-- <section>
     <title>Authentication and session management</title>
     <para>
       
@@ -25,12 +25,12 @@
     <para>
       
     </para>
-  </section>
+  </section> -->
 
   <xi:include href="Chapter3-Common_attacks_and_mitigations.xml" xmlns:xi="http://www.w3.org/2001/XInclude" />
   <xi:include href="Chapter3-Client_side_security.xml" xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-  <section>
+  <!-- <section>
     <title>Application and server configuration and hardening</title>
     <section>
       <title>Logging</title>
@@ -46,7 +46,7 @@
       <title>Storing passwords securely</title>
       <para></para>
     </section>
-  </section>
+  </section> -->
 
 
 </chapter>

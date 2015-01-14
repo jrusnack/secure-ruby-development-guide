@@ -5,10 +5,14 @@
 ]>
 <section>
   <title>Client-side security</title>
+  <para>
+    Web applications are based on interaction between client and a server and both ends can be attacked. In order to defend some of the attacks mentioned in previous chapter, reduce attack surface of client`s browsers and patch holes that were introduced without a second thought during browser wars in past, browsers include several security features. 
+  </para>
+
   <section>
     <title>Same origin policy</title>
     <para>
-      One of the most important concepts of web applications is same origin policy. It is a protection mechanism implemented by modern web browsers that isolates web applications from each other on the client side. This isolation is performed on domain names under the assumption that content from different domains comes from different entities. In theory, this means every domain has its own trust domain and interaction across domains is restricted. In practice, there are multiple ways of bypassing this mechanism, malicious ones often creating confused deputy problem where client`s browser is tricked into submitting attacker-specified request under his authority.
+      One of the most important concepts in web applications is same origin policy. It is a protection mechanism implemented by modern web browsers that isolates web applications from each other on the client side. This isolation is performed on domain names under the assumption that content from different domains comes from different entities. In theory, this means every domain has its own trust domain and interaction across domains is restricted. In practice, there are multiple ways of bypassing this mechanism, malicious ones often creating confused deputy problem where client`s browser is tricked into submitting attacker-specified request under his authority.
     </para>
 
     <para>
@@ -105,16 +109,16 @@
     </section>
 
     <section>
-      <title>Additional resources</title>
+      <title>References:</title>
       <itemizedlist>
         <listitem>
           <para>
-            Browser Security Handbook <ulink url="http://code.google.com/p/browsersec/wiki/Part2">http://code.google.com/p/browsersec/wiki/Part2</ulink>
+            Google: <ulink url="http://code.google.com/p/browsersec/wiki/Part2">Browser Security Handbook</ulink>
           </para>
         </listitem>
         <listitem>
           <para>
-            Same Origin Policy article on Mozilla Developer Network <ulink url="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Same_origin_policy_for_JavaScript">https://developer.mozilla.org/en-US/docs/Web/JavaScript/Same_origin_policy_for_JavaScript</ulink>
+            Mozilla Developer Network: <ulink url="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Same_origin_policy_for_JavaScript">Same Origin Policy</ulink>
           </para>
         </listitem>
       </itemizedlist>
@@ -299,26 +303,26 @@ var Element = { replace: function (a,text) {
     </section>
 
     <section>
-      <title>Additional resources</title>
+      <title>References:</title>
       <itemizedlist>
         <listitem>
           <para>
-            W3C Recommendation - Cross-Origin Resouce Sharing <ulink url="http://www.w3.org/TR/access-control/">http://www.w3.org/TR/access-control/</ulink>
+            W3C Recommendation: <ulink url="http://www.w3.org/TR/access-control/">Cross-Origin Resouce Sharing/</ulink>
           </para>
         </listitem>
         <listitem>
           <para>
-            cross-site xmlhttprequest with CORS <ulink url="http://hacks.mozilla.org/2009/07/cross-site-xmlhttprequest-with-cors/">http://hacks.mozilla.org/2009/07/cross-site-xmlhttprequest-with-cors/</ulink>
+            Mozilla: <ulink url="http://hacks.mozilla.org/2009/07/cross-site-xmlhttprequest-with-cors/">cross-site xmlhttprequest with CORS</ulink>
           </para>
         </listitem>
         <listitem>
           <para>
-            Ajax and Mashup Security - Open Ajax Alliance <ulink url="http://www.openajax.org/whitepapers/Ajax%20and%20Mashup%20Security.php">http://www.openajax.org/whitepapers/Ajax%20and%20Mashup%20Security.php</ulink>
+            Open Ajax Alliance: <ulink url="http://www.openajax.org/whitepapers/Ajax%20and%20Mashup%20Security.php">Ajax and Mashup Security</ulink>
           </para>
         </listitem>
         <listitem>
           <para>
-            CVE-2013-6443 and reproducer by Martin Povolný <ulink url="https://access.redhat.com/security/cve/CVE-2013-6443">https://access.redhat.com/security/cve/CVE-2013-6443</ulink>
+            <ulink url="https://access.redhat.com/security/cve/CVE-2013-6443">CVE-2013-6443</ulink>
           </para>
         </listitem>
       </itemizedlist>
@@ -515,13 +519,13 @@ Content-Security-Policy-Report-Only: ...; report-uri /csp_report_parser;
       <title>References</title>
       <itemizedlist>
         <listitem>
-          <para>W3C Content Security Policy 1.0: <ulink url="http://www.w3.org/TR/CSP/">http://www.w3.org/TR/CSP/</ulink></para>
+          <para><ulink url="http://www.w3.org/TR/CSP/">W3C Content Security Policy 1.0</ulink></para>
         </listitem>
         <listitem>
-          <para>HTML5Rocks tutorial: <ulink url="http://www.html5rocks.com/en/tutorials/security/content-security-policy/">http://www.html5rocks.com/en/tutorials/security/content-security-policy/</ulink></para>
+          <para><ulink url="http://www.html5rocks.com/en/tutorials/security/content-security-policy/">HTML5Rocks tutorial</ulink></para>
         </listitem>
         <listitem>
-          <para>GitHub blog on CSP: <ulink url="https://github.com/blog/1477-content-security-policy">https://github.com/blog/1477-content-security-policy</ulink></para>
+          <para><ulink url="https://github.com/blog/1477-content-security-policy">GitHub's blog on CSP</ulink></para>
         </listitem>
       </itemizedlist>
     </section>
@@ -593,13 +597,13 @@ config.force_ssl = true
       <title>References</title>
       <itemizedlist>
         <listitem>
-          <para>RFC 6797: <ulink url="http://tools.ietf.org/html/rfc6797">http://tools.ietf.org/html/rfc6797</ulink></para>
+          <para><ulink url="http://tools.ietf.org/html/rfc6797">RFC 6797</ulink></para>
         </listitem>
         <listitem>
-          <para>Mozilla - Preloading HSTS: <ulink url="https://blog.mozilla.org/security/2012/11/01/preloading-hsts/">https://blog.mozilla.org/security/2012/11/01/preloading-hsts/</ulink></para>
+          <para>Mozilla: <ulink url="https://blog.mozilla.org/security/2012/11/01/preloading-hsts/">Preloading HSTS</ulink></para>
         </listitem>
         <listitem>
-          <para>Chromium - list of preloaded  known  HSTS  hosts: <ulink url="https://src.chromium.org/viewvc/chrome/trunk/src/net/http/transport_security_state_static.json">https://src.chromium.org/viewvc/chrome/trunk/src/net/http/transport_security_state_static.json</ulink></para>
+          <para>Chromium: <ulink url="https://src.chromium.org/viewvc/chrome/trunk/src/net/http/transport_security_state_static.json">list of preloaded  known  HSTS  hosts</ulink></para>
         </listitem>
       </itemizedlist>
     </section>
@@ -725,7 +729,7 @@ X-Content-Type-Options: nosniff
         <itemizedlist>
           <listitem>
             <para>
-               Internet Explorer Dev Center - Reducing MIME type security risks: <ulink url="http://msdn.microsoft.com/en-us/library/ie/gg622941">http://msdn.microsoft.com/en-us/library/ie/gg622941</ulink>
+               Internet Explorer Dev Center: <ulink url="http://msdn.microsoft.com/en-us/library/ie/gg622941">Reducing MIME type security risks</ulink>
             </para>
           </listitem>
         </itemizedlist>

@@ -5,6 +5,13 @@
 ]>
 <section>
   <title>Common attacks and mitigations</title>
+    <para>
+      Creating a secure web application is impossible without knowing most common attack vectors and taking proactive actions to prevent them, such as code reviews, coding standards etc.
+    </para>
+
+    <para>
+      This section lists some of the most common attacks with in depth explanations, examples of real world vulnerabilities and specifics concerning Rails applications.
+    </para>
 
    <section>
     <title>Command injection</title>
@@ -161,19 +168,19 @@ system(command, *parameters)
       <title>References</title>
       <itemizedlist>
         <listitem>
-          <para>Ruby on Rails Security Guide - SQL injection: <ulink url="http://guides.rubyonrails.org/security.html#sql-injection">http://guides.rubyonrails.org/security.html#sql-injection</ulink></para>
+          <para>Ruby on Rails Security Guide: <ulink url="http://guides.rubyonrails.org/security.html#sql-injection">SQL injection</ulink></para>
         </listitem>
         <listitem>
-          <para>Rails SQL Injection: <ulink url="http://rails-sqli.org/">http://rails-sqli.org/</ulink></para>
+          <para><ulink url="http://rails-sqli.org/">Rails SQL Injection</ulink></para>
         </listitem>
         <listitem>
-          <para>OWASP SQL Injection: <ulink url="https://owasp.org/index.php/SQL_Injection">https://owasp.org/index.php/SQL_Injection</ulink></para>
+          <para>OWASP: <ulink url="https://owasp.org/index.php/SQL_Injection">SQL Injection</ulink></para>
         </listitem>
         <listitem>
-          <para>CWE-89: Improper Neutralization of Special Elements used in an SQL Command ('SQL Injection'): <ulink url="http://cwe.mitre.org/data/definitions/89.html">http://cwe.mitre.org/data/definitions/89.html</ulink></para>
+          <para>CWE-89: <ulink url="http://cwe.mitre.org/data/definitions/89.html">Improper Neutralization of Special Elements used in an SQL Command ('SQL Injection')</ulink></para>
         </listitem>
         <listitem>
-          <para>CWE-77: Improper Neutralization of Special Elements used in a Command ('Command Injection'): <ulink url="http://cwe.mitre.org/data/definitions/77.html">http://cwe.mitre.org/data/definitions/77.html</ulink></para>
+          <para>CWE-77: <ulink url="http://cwe.mitre.org/data/definitions/77.html">Improper Neutralization of Special Elements used in a Command ('Command Injection')</ulink></para>
         </listitem>
 
       </itemizedlist>
@@ -315,31 +322,31 @@ rescue
       <title>References</title>
       <itemizedlist>
         <listitem>
-          <para>Ruby on Rails Security Guide - Cross-site Scripting: <ulink url="http://guides.rubyonrails.org/security.html#cross-site-scripting-xss">http://guides.rubyonrails.org/security.html#cross-site-scripting-xss</ulink></para>
+          <para>Ruby on Rails Security Guide: <ulink url="http://guides.rubyonrails.org/security.html#cross-site-scripting-xss">Cross-site Scripting</ulink></para>
         </listitem>
         <listitem>
-          <para>OWASP - Cross-site Scripting: <ulink url="https://www.owasp.org/index.php/Cross-site_Scripting_%28XSS%29">https://www.owasp.org/index.php/Cross-site_Scripting_%28XSS%29</ulink></para>
+          <para>OWASP: <ulink url="https://www.owasp.org/index.php/Cross-site_Scripting_%28XSS%29">Cross-site Scripting</ulink></para>
         </listitem>
         <listitem>
-          <para>OWASP - XSS (Cross Site Scripting) Prevention Cheat Sheet: <ulink url="https://www.owasp.org/index.php/XSS_%28Cross_Site_Scripting%29_Prevention_Cheat_Sheet">https://www.owasp.org/index.php/XSS_%28Cross_Site_Scripting%29_Prevention_Cheat_Sheet</ulink></para>
+          <para>OWASP: <ulink url="https://www.owasp.org/index.php/XSS_%28Cross_Site_Scripting%29_Prevention_Cheat_Sheet">XSS (Cross Site Scripting) Prevention Cheat Sheet</ulink></para>
         </listitem>
         <listitem>
-          <para>OWASP - Reviewing Code for Cross-site scripting: <ulink url="https://www.owasp.org/index.php/Reviewing_Code_for_Cross-site_scripting">https://www.owasp.org/index.php/Reviewing_Code_for_Cross-site_scripting</ulink></para>
+          <para>OWASP: <ulink url="https://www.owasp.org/index.php/Reviewing_Code_for_Cross-site_scripting">Reviewing Code for Cross-site scripting</ulink></para>
         </listitem>
         <listitem>
-          <para>OWASP - DOM Based XSS: <ulink url="https://www.owasp.org/index.php/DOM_Based_XSS">https://www.owasp.org/index.php/DOM_Based_XSS</ulink></para>
+          <para>OWASP: <ulink url="https://www.owasp.org/index.php/DOM_Based_XSS">DOM Based XSS</ulink></para>
         </listitem>
         <listitem>
-          <para>OWASP - DOM Based XSS Prevention Cheat Sheet: <ulink url="https://www.owasp.org/index.php/DOM_based_XSS_Prevention_Cheat_Sheet">https://www.owasp.org/index.php/DOM_based_XSS_Prevention_Cheat_Sheet</ulink></para>
+          <para>OWASP: <ulink url="https://www.owasp.org/index.php/DOM_based_XSS_Prevention_Cheat_Sheet">DOM Based XSS Prevention Cheat Sheet</ulink></para>
         </listitem>
         <listitem>
-          <para>OWASP - Testing for Reflected Cross site scripting: <ulink url="https://www.owasp.org/index.php/Testing_for_Reflected_Cross_site_scripting_%28OWASP-DV-001%29">https://www.owasp.org/index.php/Testing_for_Reflected_Cross_site_scripting_%28OWASP-DV-001%29</ulink></para>
+          <para>OWASP: <ulink url="https://www.owasp.org/index.php/Testing_for_Reflected_Cross_site_scripting_%28OWASP-DV-001%29">Testing for Reflected Cross site scripting</ulink></para>
         </listitem>
         <listitem>
-          <para>OWASP - Testing for Stored Cross site scripting: <ulink url="https://www.owasp.org/index.php/Testing_for_Stored_Cross_site_scripting_%28OWASP-DV-002%29">https://www.owasp.org/index.php/Testing_for_Stored_Cross_site_scripting_%28OWASP-DV-002%29</ulink></para>
+          <para>OWASP: <ulink url="https://www.owasp.org/index.php/Testing_for_Stored_Cross_site_scripting_%28OWASP-DV-002%29">Testing for Stored Cross site scripting</ulink></para>
         </listitem>
         <listitem>
-          <para>OWASP - Testing for DOM-based Cross site scripting: <ulink url="https://www.owasp.org/index.php/Testing_for_DOM-based_Cross_site_scripting_%28OTG-CLIENT-001%29">https://www.owasp.org/index.php/Testing_for_DOM-based_Cross_site_scripting_%28OTG-CLIENT-001%29</ulink></para>
+          <para>OWASP: <ulink url="https://www.owasp.org/index.php/Testing_for_DOM-based_Cross_site_scripting_%28OTG-CLIENT-001%29">Testing for DOM-based Cross site scripting</ulink></para>
         </listitem>
       </itemizedlist>
     </section>
@@ -485,24 +492,19 @@ end
       <itemizedlist>
 
         <listitem>
-          <para>OWASP - Cross Site Request Forgery: <ulink url="https://www.owasp.org/index.php/Cross-Site_Request_Forgery_%28CSRF%29">https://www.owasp.org/index.php/Cross-Site_Request_Forgery_%28CSRF%29</ulink></para>
+          <para>OWASP: <ulink url="https://www.owasp.org/index.php/Cross-Site_Request_Forgery_%28CSRF%29">Cross Site Request Forgery</ulink></para>
         </listitem>
         <listitem>
-          <para>OWASP - CSRF Prevention cheat sheet: <ulink url="https://www.owasp.org/index.php/Cross-Site_Request_Forgery_%28CSRF%29_Prevention_Cheat_Sheet">https://www.owasp.org/index.php/Cross-Site_Request_Forgery_%28CSRF%29_Prevention_Cheat_Sheet</ulink></para>
+          <para>OWASP: <ulink url="https://www.owasp.org/index.php/Cross-Site_Request_Forgery_%28CSRF%29_Prevention_Cheat_Sheet">CSRF Prevention cheat sheet</ulink></para>
         </listitem>
         <listitem>
-          <para>CWE-352: Cross-Site Request Forgery (CSRF) <ulink url="https://cwe.mitre.org/data/definitions/352.html">https://cwe.mitre.org/data/definitions/352.html</ulink></para>
+          <para>CWE-352: <ulink url="https://cwe.mitre.org/data/definitions/352.html">Cross-Site Request Forgery (CSRF)</ulink></para>
         </listitem>
         <listitem>
-          <para>Encrypted Token pattern: <ulink url="http://insidethecpu.wordpress.com/2013/09/23/encrypted-token-pattern/">http://insidethecpu.wordpress.com/2013/09/23/encrypted-token-pattern/</ulink></para>
+          <para><ulink url="http://insidethecpu.wordpress.com/2013/09/23/encrypted-token-pattern/">Encrypted Token pattern</ulink></para>
         </listitem>
       </itemizedlist>
     </section>
-  </section>
-
-  <section>
-    <title>Cross site tracing (XST)</title>
-    <para></para>
   </section>
 
   <section>
