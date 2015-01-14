@@ -27,10 +27,14 @@ NameError: uninitialized constant Module::MY_SYMBOL
   </para>
 
   <para>
-    Starting from Ruby 2.2, a new method <command>Symbol.find?</command> will be added, that allows to check for existence of a Symbol without defining it. Starting from Ruby 2.0, method <command>rb_check_id</command> is also available to Ruby C extensions, which returns 0 when String passed as argument is not already defined as Symbol. This makes overriding default intern methods possible.
+    Starting from Ruby 2.0, method <command>rb_check_id</command> is available to Ruby C extensions, which returns 0 when String passed as argument is not already defined as Symbol. This makes overriding default intern methods possible.
   </para>
 
   <para>
     <ulink url="https://github.com/jrusnack/safe_intern">SafeIntern</ulink> gem makes use of  <command>rb_check_id</command> and provides a patch for <command>to_sym</command> or <command>intern</command> methods of String. When the conversion from String to Symbol would define a new Symbol, either nil is returned or exception raised. Such approach prohibits creating any new Symbols other than those that are already defined by the application. In case the string is trusted, new symbol can be created by calling <command>intern(:allow_unsafe)</command>.
   </para>
+
+    <para>
+      Ruby 2.2 <ulink url="https://www.ruby-lang.org/en/news/2014/12/25/ruby-2-2-0-released/">released 25th of Dec 2014</ulink> includes substantial improvements to it`s garbage collector, on of which is ability to garbage collect Symbols. This solves denial of service problems with Symbols present in previous versions of Ruby.
+    </para>
 </section>
