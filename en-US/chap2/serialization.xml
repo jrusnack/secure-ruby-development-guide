@@ -1,0 +1,201 @@
+<?xml version='1.0' encoding='utf-8' ?>
+<!DOCTYPE chapter PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN" "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd" [
+<!ENTITY % BOOK_ENTITIES SYSTEM "Secure_Ruby_Development_Guide.ent">
+%BOOK_ENTITIES;
+]>
+
+<section>
+  <title>Serialization in Ruby</title>
+  <para>
+    Deserialization of untrusted data has been on the top of critical vulnerabilities in 2013 (prominent examples are deserialization issues found in Ruby on Rails, see <ulink url="https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2013-0156">CVE-2013-0156</ulink>, <ulink url="https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2013-0277">CVE-2013-0277</ulink> or <ulink url="https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2013-0333">CVE-2013-0333</ulink>). There are several ways  how to serialize objects in Ruby:
+  </para>
+   <section>
+      <title>Marshal.load</title>
+      <para>
+        <command>Marshal.dump</command> and <command>Marshal.load</command> can serialize and deserialize most of the classes in Ruby. If application deserializes data from untrusted source, attacker can abuse this to execute arbitrary code. Therefore, this method is not suitable most of the time and should never be be used on data from unstrusted source.
+      </para>
+
+    </section>
+
+    <section>
+      <title>YAML.load</title>
+      <para>
+        YAML is a popular serialization format among Ruby developers. Just like <command>Marshal.load</command> it can be used to deserialize most of the Ruby classes and also should never be used on untrusted data.
+      </para>
+
+      <section>
+        <title>SafeYAML</title>
+        <para>
+          Alternative approach is taken by <ulink url="http://danieltao.com/safe_yaml/">SafeYAML</ulink> gem - by default it allows deserialization of only few types of objects that can be considered safe, such as <constant>Hash</constant>, <constant>Array</constant>, <constant>String</constant> etc. When application requires serialization of certain types, developer can explicitly whitelist trusted types of objects:
+          <programlisting>
+SafeYAML.whitelist!(FrobDispenser, GobbleFactory)
+          </programlisting>
+          This approach is more versatile, since it disables serialization of unsafe classes, yet allows developer to serialize know benign object. Requiring <constant>safe_yaml</constant> will patch method <command>YAML.load</command>.
+        </para>
+      </section>
+    </section>
+
+    <section>
+      <title>JSON.parse and JSON.load</title>
+      <para>
+        JSON format supports only several primitive data types such as strings, arrays, hashes, numbers etc. This certainly limits the attack surface, but it should not give developer false sense of security - one example is <ulink url="https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2013-0333">CVE-2013-0333</ulink> vulnerability in Ruby on Rails, when parser used for deserialization of JSON data actually converted data to a subset of <constant>YAML</constant> and used <command>YAML.load</command> to deserialize.
+      </para>
+
+      <para>
+        However, it is possible to extend Ruby classes to be JSON-dumpable:
+
+        <programlisting language="Ruby">
+class Range
+def to_json(*a)
+  {
+    'json_class'   => self.class.name,
+    'data'         => [ first, last, exclude_end? ]
+  }.to_json(*a)
+end
+
+def self.json_create(o)
+  new(*o['data'])
+end
+end
+        </programlisting>
+
+        This will allow instances of Range class to be serialized with JSON:
+
+        <programlisting language="Ruby">
+>> (1..10).to_json
+=> "{\"json_class\":\"Range\",\"data\":[1,10,false]}"
+        </programlisting>
+
+        During deserialization, JSON gem will try to look up class referenced by "json_class", which might create new Symbol if the class does not exist, possibly allowing Denial of Service (see <xref linkend='RubySymbols'/>):
+        <programlisting>
+>> Symbol.all_symbols.size
+=> 3179
+>> JSON.parse('{"json_class":"NonexistentClass"}')
+ArgumentError: can't get const NonexistentClass: uninitialized constant NonexistentClass
+>> Symbol.all_symbols.size
+=> 3180
+        </programlisting>
+        To disable this, <constant>:create_additions => false</constant> option can be passed as second argument:
+
+        <programlisting>
+>> JSON.parse('{"json_class":"NonexistentClass"}',:create_additions => false)
+=> {"json_class"=>"NonexistentClass"}
+        </programlisting>
+
+        This behaviour has changed in response to <ulink url="https://www.ruby-lang.org/en/news/2013/02/22/json-dos-cve-2013-0269/">CVE-2013-0269</ulink> and <command>JSON.parse</command> now defaults to <constant>:create_additions => false</constant>. However, default behaviour has not changed for <command>JSON.load</command>, which is dangerous to call on untrusted input.
+      </para>
+    </section>
+    <section>
+      <title>Exploiting deserialization vulnerabilities</title>
+      <para>
+        To exploit deserialization vulnerability, there must already be a dangerous class loaded in the current namespace. In particular, it contains unsafe <command>init_with()</command> or <command>[]=</command> methods, that get called during deserialization. This might seem like an unlikely event, however, its very likely in case of big projects like Ruby on Rails. 
+      </para>
+      <para>
+        <ulink url="https://groups.google.com/forum/?fromgroups=#!topic/rubyonrails-security/61bkgvnSGTQ">CVE-2013-0156</ulink> vulnerability in Ruby on Rails can be used as an example. A vulnerable class in this case was <constant>ActionDispatch::Routing::RouteSet::NamedRouteCollection</constant>, which contained code like this:
+        <programlisting language="Ruby">
+class NamedRouteCollection
+alias []=   add
+
+def add(name, route)
+  routes[name.to_sym] = route
+  define_named_route_methods(name, route)
+end
+
+def define_named_route_methods(name, route)
+  define_url_helper route, :"#{name}_path",
+    route.defaults.merge(:use_route => name, :only_path => true)
+  define_url_helper route, :"#{name}_url",
+    route.defaults.merge(:use_route => name, :only_path => false)
+end
+
+def define_url_helper(route, name, options)@module.module_eval &lt;&lt;-END_EVAL
+    def #{name}(*args)
+      # ... code
+    end
+  END_EVAL
+end
+
+...
+        </programlisting>
+        Even though <command>module_eval</command> is hidden under several layers of method calls, calling <command>[]=</command> effectively passes first argument to the <command>define_url_helper</command>, where it gets evaluated. 
+      </para>
+
+      <para>
+        To exploit vulnerable class, it is enough to deserialize YAML payload below:
+        <programlisting>
+--- !ruby/hash:NamedRouteCollection
+foo; end; system 'rm /etc/passwd'; def bar: baz
+        </programlisting>
+        Before deserialization, Ruby's YAML parser Psych first looks at the declared type, which says this object is an instance of <constant>NamedRouteCollection</constant> and subclass of Ruby's <constant>Kernel::Hash</constant> class.
+      </para>
+      <para>
+        Deserialization of hashes from YAML to Ruby makes use of <command>[]=</command> method. Given YAML like
+
+        <programlisting>
+--- !ruby/hash:MyHash
+key1: value1
+key2: value2
+        </programlisting>
+        deserialization process is equivalent to calling
+        <programlisting language="Ruby">
+newobj = MyHash.new
+newobj['key1'] = 'value1'
+newobj['key2'] = 'value2'
+newobj
+        </programlisting>
+      </para>
+
+      <para>
+        In the case of YAML payload, key and value pair is
+        <programlisting language="Ruby">
+['foo; end; system 'rm /etc/passwd'; def bar','baz']
+        </programlisting>
+        so deserialization process will call <command>[]=</command> method on <constant>NamedRouteCollection</constant> with key <code>'foo; end; system 'rm /etc/passwd'; def bar'</code>.
+      </para>
+      <para>
+        This gets passed to <command>define_url_helper</command> as an argument and following code gets evaluated:
+
+        <programlisting language="Ruby">
+def foo; end; system 'rm /etc/passwd'; def bar(*args)
+# ... code
+end
+        </programlisting>
+        Reordering the code above to be more readable, this is equivalent to
+        <programlisting language="Ruby">
+def foo
+end 
+
+system 'rm /etc/passwd'
+
+def bar(*args)
+# ... code
+end
+        </programlisting>
+      </para>
+        <section>
+          <title>References</title>
+          <itemizedlist>
+            <listitem>
+              <para>
+                Aaron Patterson's  <ulink url="http://tenderlovemaking.com/2013/02/06/yaml-f7u12.html">blog</ulink>
+              </para>
+            </listitem>
+            <listitem>
+              <para>
+                Charlie Sommerville's  <ulink url="https://charlie.bz/blog/rails-3.2.10-remote-code-execution">blog</ulink>
+              </para>
+            </listitem>
+            <listitem>
+              <para>
+                Metasploit's  <ulink url="https://community.rapid7.com/community/metasploit/blog/2013/01/09/serialization-mischief-in-ruby-land-cve-2013-0156">blog</ulink>
+              </para>
+            </listitem>
+            <listitem>
+              <para>
+                <ulink url="http://www.yaml.org/YAML_for_ruby.html#extending_kernel::hash">Extending Hash</ulink>
+              </para>
+            </listitem>
+          </itemizedlist>
+        </section>
+    </section>
+</section>

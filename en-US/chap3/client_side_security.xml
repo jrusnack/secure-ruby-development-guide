@@ -3,6 +3,7 @@
 <!ENTITY % BOOK_ENTITIES SYSTEM "Secure_Ruby_Development_Guide.ent">
 %BOOK_ENTITIES;
 ]>
+
 <section>
   <title>Client-side security</title>
   <para>

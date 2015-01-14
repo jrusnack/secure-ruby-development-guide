@@ -1,0 +1,19 @@
+<?xml version='1.0' encoding='utf-8' ?>
+<!DOCTYPE chapter PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN" "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd" [
+<!ENTITY % BOOK_ENTITIES SYSTEM "Secure_Ruby_Development_Guide.ent">
+%BOOK_ENTITIES;
+]>
+
+<section>
+  <title>Regular expressions</title>
+  <para>
+    A common gotcha in Ruby regular expressions relates to anchors marking the begninning and the end of a string. Specifically, <constant>^</constant> and <constant>$</constant> refer to the beginning and the end of a line, rather then a string. If regular expression like <command>/^[a-z]+$</command> is used to whitelist user input, attacker can bypass it by including newline. To match the beginning and the end of a string use anchors <command>\A</command> and <command>\z</command>. 
+    <programlisting language="Ruby">
+>> puts 'Exploited!' if /^benign$/ =~ "benign\n with exploit"
+Exploited!
+=> nil
+>> puts 'Exploited!' if /\Abenign\z/ =~ "benign\n with exploit"
+=> nil
+    </programlisting>
+  </para>
+</section>

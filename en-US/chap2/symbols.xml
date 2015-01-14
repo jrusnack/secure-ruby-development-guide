@@ -1,0 +1,36 @@
+<?xml version='1.0' encoding='utf-8' ?>
+<!DOCTYPE chapter PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN" "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd" [
+<!ENTITY % BOOK_ENTITIES SYSTEM "Secure_Ruby_Development_Guide.ent">
+%BOOK_ENTITIES;
+]>
+
+<section id="RubySymbols">
+  <title>Symbols</title>
+  <para>
+    Symbols in MRI Ruby are used for method, variable and constant lookup. They are implemented as integers so that they are faster to look up in hastables. Once symbol is created, memory allocated for it is never freed. This creates opportunity for attacker: if he is able to create arbitrary symbols, he could flood the application with unique symbols that will never be garbage collected. Memory consumption of Ruby process would only grow until it runs out of memory, resulting in Denial of Service attack.
+  </para>
+  <para>
+    Application developers should be careful when calling <command>to_sym</command> or <command>intern</command> on user-supplied strings. Additionally, other methods may convert supplied arguments to symbols internally, for example <command>Object.send</command>, <command>Object.instance_variable_set</command>, <command>Object.instance_variable_get</command>, <command>Module.const_get</command> or <command>Module.const_set</command>:
+    
+    <programlisting language="Ruby">
+>> Symbol.all_symbols.size
+=> 2956
+>> Module.const_get('MY_SYMBOL')
+NameError: uninitialized constant Module::MY_SYMBOL
+>> Symbol.all_symbols.size
+=> 2957
+    </programlisting>
+
+  </para>
+  <para>
+    Array of all currently defined symbols is available through <command>Symbol.all_symbols</command> class method.
+  </para>
+
+  <para>
+    Starting from Ruby 2.2, a new method <command>Symbol.find?</command> will be added, that allows to check for existence of a Symbol without defining it. Starting from Ruby 2.0, method <command>rb_check_id</command> is also available to Ruby C extensions, which returns 0 when String passed as argument is not already defined as Symbol. This makes overriding default intern methods possible.
+  </para>
+
+  <para>
+    <ulink url="https://github.com/jrusnack/safe_intern">SafeIntern</ulink> gem makes use of  <command>rb_check_id</command> and provides a patch for <command>to_sym</command> or <command>intern</command> methods of String. When the conversion from String to Symbol would define a new Symbol, either nil is returned or exception raised. Such approach prohibits creating any new Symbols other than those that are already defined by the application. In case the string is trusted, new symbol can be created by calling <command>intern(:allow_unsafe)</command>.
+  </para>
+</section>

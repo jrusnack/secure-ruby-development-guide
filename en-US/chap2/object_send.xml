@@ -1,0 +1,33 @@
+<?xml version='1.0' encoding='utf-8' ?>
+<!DOCTYPE chapter PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN" "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd" [
+<!ENTITY % BOOK_ENTITIES SYSTEM "Secure_Ruby_Development_Guide.ent">
+%BOOK_ENTITIES;
+]>
+
+<section>
+  <title>Object.send</title>
+  <para>
+    <command>Object.send</command> is a method with serious security impact, since it invokes any method on object, including private methods. Some methods in Ruby like <command>eval</command> or <command>exit!</command> are private methods of <constant>Object</constant> and can be invoked using <command>send</command>: 
+    <programlisting language="Ruby">
+>> Object.private_methods.include?(:eval)
+=> true
+>> Object.private_methods.include?(:exit)
+=> true
+>> Object.send('eval', "system 'uname'")
+Linux
+=> true
+    </programlisting>
+  </para>
+  <para>
+    Alternative is <command>Object.public_send</command>, which by definition only invokes public methods on object. However, this does not prevent attacker from executing only private methods, since <command>Object.send</command> itself is (and has to be) public:
+    <programlisting language="Ruby">
+>> Object.public_send("send","eval","system 'uname'")
+Linux
+=> true
+>> Object.public_send("send","exit!")     # exits
+    </programlisting>
+  </para>
+  <para>
+    Developers should be careful when invoking <command>send</command> and <command>public_send</command> with user controlled arguments.
+  </para>
+</section>

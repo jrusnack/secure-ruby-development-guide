@@ -1,0 +1,41 @@
+<?xml version='1.0' encoding='utf-8' ?>
+<!DOCTYPE chapter PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN" "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd" [
+<!ENTITY % BOOK_ENTITIES SYSTEM "Secure_Ruby_Development_Guide.ent">
+%BOOK_ENTITIES;
+]>
+
+<section id="dangerous_methods">
+  <title>Dangerous methods</title>
+  <para>
+    Ruby contains number of methods and modules that should be used with caution, since calling them with input potentially controlled by attacker might be abused into arbitrary code execution. These include:
+    <itemizedlist>
+      <listitem>
+        <para><command>Kernel#exec</command>, <command>Kernel#system</command>, backticks and <command>%x{...}</command></para>
+      </listitem>
+      <listitem>
+        <para><command>Kernel#fork</command>, <command>Kernel#spawn</command></para>
+      </listitem>
+      <listitem>
+        <para><command>Kernel#load</command>, <command>Kernel#autoload</command></para>
+      </listitem>
+      <listitem>
+        <para><command>Kernel#require</command>, <command> Kernel#require_relative</command></para>
+      </listitem>
+      <listitem>
+        <para><command>DL</command> and <command>Fiddle</command> module</para>
+      </listitem>
+      <listitem>
+        <para><command>Object#send</command>, <command>Object#__send__</command> and <command>Object#public_send</command></para>
+      </listitem>
+      <listitem>
+        <para><command>BasicObject#instance_eval</command>, <command>BasicObject#instance_exec</command></para>
+      </listitem>
+      <listitem>
+        <para><command>Module#class_eval</command>, <command>Module#class_exec</command>, <command>Module#module_eval</command>, <command>Module#module_exec</command></para>
+      </listitem>
+      <listitem>
+        <para><command>Module#alias_method</command></para>
+      </listitem>
+    </itemizedlist>
+  </para>
+</section>

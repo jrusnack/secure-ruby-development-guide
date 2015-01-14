@@ -1,0 +1,150 @@
+<?xml version='1.0' encoding='utf-8' ?>
+<!DOCTYPE chapter PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN" "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd" [
+<!ENTITY % BOOK_ENTITIES SYSTEM "Secure_Ruby_Development_Guide.ent">
+%BOOK_ENTITIES;
+]>
+
+<section>
+  <title>Tainting and restricted code execution</title>
+  <para>
+    Ruby language includes a security mechanism to handle untrusted objects
+    and restrict arbitrary code execution. This mechanism consists of two parts: first is an automated way of marking objects in Ruby as coming from untrusted source, called tainting. The second part is mechanism for restricting code execution and prevents certain potentially dangerous functions being executed on tainted data. Ruby interpreter can run in several safe levels, each of which defines different restrictions.
+  </para>
+  <para>
+    This mechanism (especially restricted code execution) is implementation 
+    specific and is not part of Ruby specification. Other Ruby implementations such as Rubinius and JRuby do not implement safe levels. However, taint flag is part of the rubyspec.
+  </para>
+  <section>
+    <title>Object.tainted?</title>
+    <para>
+      Each object in Ruby carries a taint flag which marks it as originating from unsafe source. Additionally, any object derived from tainted object is also tainted. Objects that come from external environment are automatically marked as tainted, which includes command line arguments (<constant>ARGV</constant>), environment variables (<constant>ENV</constant>), data read from files, sockets or other streams. Environment variable <constant>PATH</constant> is exception: it is tainted only if it contains a world-writable directory.
+    </para>
+    <para>
+      To check whether object is tainted and change taintedness of object, use methods <command>Object.tainted?</command>, <command>Object.taint</command> and <command>Object.untaint</command>:
+
+      <programlisting>
+>> input = gets
+exploitable
+=> "exploitable\n"
+>> input.tainted?
+=> true
+>> input.untaint
+=> "exploitable\n"
+>> input.tainted?
+=> false
+      </programlisting>
+      <note>
+        <para>
+          Literals (such as numbers or symbols) are exception: they do not carry taint flag and are always untainted.
+        </para>
+      </note>
+    </para>
+  </section>
+  <section>
+    <title>Object.untrusted?</title>
+    <para>
+      At higher safe levels (see safe level 4 below) any code is automatically untrusted and interpreter prevents execution of untrusted code on trusted objects. In Ruby 1.8, taint flag is also used to mark objects as untrusted, so untrusted code is not allowed to modify untainted objects. In addition, any object created by untrusted code is tainted. This effectively allows to sandbox an untrusted code, which will not be allowed to modify "trusted" objects. 
+    </para>
+    <para>
+      Mixing taint and trust of object has serious drawback - untrusted code is allowed to modify all tainted objects (even if they come from trusted code).
+    </para>
+    <para>
+      Ruby 1.9 adds another flag to each object to mark it as untrusted. Untrusted code is now allowed only to modify untrusted objects (ignoring taint flag), and objects created by untrusted code are automatically marked as untrusted and tainted. To check and modify trust flag use methods <command>Object.untrusted?</command>, <command>Object.untrust</command> and <command>Object.trust</command>.
+    </para>
+    <para>
+      However, Ruby 2.1 deprecates trust flag and the behaviour of above methods is the same as <command>Object.tainted?</command>, <command>Object.taint</command> and <command>Object.untaint</command>. This change comes together with removal of safe level 4, which makes trust flag useless (see <ulink url="https://bugs.ruby-lang.org/issues/8468">issue on ruby-lang</ulink> or read below).
+    </para>
+  </section>
+  <section>
+    <title>$SAFE</title>
+    <para>
+      Ruby interpreter can run in restricted execution mode with several levels of checking, controlled by global variable <constant>$SAFE</constant>. There are 5 possible levels: 0,1,2,3,4 with 0 being default safe level. <constant>$SAFE</constant> is thread-local and its value can only be increased (at least in theory - in practice there are well known ways how to work around restricted code execution or decrease a safe level. See <xref linkend='SAFE-security'/>). Safe level can be changed by assigning to <constant>$SAFE</constant> or with <command>-T&lt;level&gt;</command> argument.
+    </para>
+  
+    <para>Safe levels have following restrictions:
+      <variablelist>
+        <varlistentry>
+          <term>
+            level 0
+          </term>
+          <listitem>
+            <para>strings from streams/environment/ARGV are tainted (default)</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term>
+            level 1
+          </term>
+          <listitem>
+            <para>dangerous operations on tainted values are forbidden (such as <command>eval</command>, <command>require</command> etc.)</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term>
+            level 2
+          </term>
+          <listitem>
+            <para>adds to the level 1 also restrictions on directory, file and process operations</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term>
+            level 3
+          </term>
+          <listitem>
+            <para>in addition all created objects are tainted and untrusted</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term>
+            level 4
+          </term>
+          <listitem>
+            <para>code running in this level cannot change trusted objects, direct output is also restricted. This safe level <ulink url="https://bugs.ruby-lang.org/issues/8468">is deprecated</ulink> since Ruby 2.1</para>
+          </listitem>
+        </varlistentry>
+      </variablelist>
+    </para>
+    <para>
+      There is a lack of documentation of what is restricted in each safe level. For more exhausting description refer to <ulink url="http://ruby-doc.com/docs/ProgrammingRuby/">Programming Ruby: Pragmatic programmer`s guide</ulink>.
+    </para>
+    <section id='SAFE-security'>
+      <title id='SAFE-security.title'>Security considerations of $SAFE</title>
+      <para>
+        Design of restricted code execution based on <constant>$SAFE</constant> is inherently flawed. Blacklist approach is used to restrict operation on each level, which means any missed function creates a vulnerability. In past several security updates were related to restricted code execution and taint flag (see <ulink url="https://www.ruby-lang.org/en/news/2005/10/03/ruby-vulnerability-in-the-safe-level-settings/">CVE-2005-2337</ulink>, CVE-2006-3694, <ulink url="https://www.ruby-lang.org/en/news/2008/08/08/multiple-vulnerabilities-in-ruby/">CVE-2008-3655</ulink>, <ulink url="https://www.ruby-lang.org/en/news/2008/08/08/multiple-vulnerabilities-in-ruby/">CVE-2008-3657</ulink>, <ulink url="https://www.ruby-lang.org/en/news/2011/02/18/exception-methods-can-bypass-safe/">CVE-2011-1005</ulink>, <ulink url="https://www.ruby-lang.org/en/news/2012/10/12/cve-2012-4464-cve-2012-4466/">CVE-2012-4464</ulink>,<ulink url="https://www.ruby-lang.org/en/news/2012/10/12/cve-2012-4464-cve-2012-4466/">CVE-2012-4466</ulink> and <ulink url="https://www.ruby-lang.org/en/news/2013/05/14/taint-bypass-dl-fiddle-cve-2013-2065/">CVE-2013-2065</ulink>). 
+      </para>
+
+      <warning>
+        <para>
+          Design of restricted code execution based on <constant>$SAFE</constant> is inherently flawed and cannot be used to run untrusted code even at the highest safe level. It must not be used as mechanism to create a secure sandbox, as attacker will be able to work around the restrictions or decrease safe level.
+        </para>
+      </warning>
+
+      <para>
+        One example of how exploitable the design is comes from <ulink url="https://www.ruby-lang.org/en/news/2013/05/14/taint-bypass-dl-fiddle-cve-2013-2065/">CVE-2013-2065</ulink>:
+
+        <programlisting language="Ruby">
+require 'fiddle'
+
+$SAFE = 1
+input = "uname -rs".taint
+handle = DL.dlopen(nil)
+sys = Fiddle::Function.new(handle['system'], [Fiddle::TYPE_VOIDP], Fiddle::TYPE_INT)
+sys.call DL::CPtr[input].to_i
+        </programlisting>
+
+        Even though safe level 1 should restrict execution of system commands, this can be bypassed using Fiddle library, which is an extension to translate a foreign function interface with Ruby. Exploit above bypasses safe level by passing input to system call as numeric memory offset. Since numbers as literals cannot be tainted, code cannot check taintedness of input.
+      </para>
+
+      <note>
+        <para>
+          However, running application with higher safe level is still useful for catching unintended programming errors, such as executing <command>eval</command> on tainted string. 
+        </para>
+      </note>
+    </section>
+  </section>
+</section>

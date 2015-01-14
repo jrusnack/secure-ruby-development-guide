@@ -1,0 +1,135 @@
+<?xml version='1.0' encoding='utf-8' ?>
+<!DOCTYPE chapter PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN" "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd" [
+<!ENTITY % BOOK_ENTITIES SYSTEM "Secure_Ruby_Development_Guide.ent">
+%BOOK_ENTITIES;
+]>
+
+<section>
+  <title>SSL in Ruby</title>
+  <para>
+    Ruby uses OpenSSL implementation of common cryptographic primitives, which are accessible through <constant>OpenSSL</constant> module included in standard library. This module is then used by other parts of standard library to manage SSL, including <constant>Net::HTTP</constant>, <constant>Net::POP</constant>, <constant>Net::IMAP</constant>, <constant>Net::SMTP</constant> and others.
+  </para>
+
+  <para>
+    There are four valid verification modes <constant>VERIFY_NONE</constant>, <constant>VERIFY_PEER</constant>, <constant>VERIFY_FAIL_IF_NO_PEER_CERT</constant> and <constant>VERIFY_CLIENT_ONCE</constant>. These correspond to underlying <ulink url="https://www.openssl.org/docs/ssl/SSL_CTX_set_verify.html#NOTES">OpenSSL modes</ulink>.
+  </para>
+
+  <para>
+    SSL connection can be created using OpenSSL module directly:
+    <programlisting language="Ruby">
+>> require 'openssl'
+=> true
+>> require 'socket'
+=> true
+>> tcp_client = TCPSocket.new 'redhat.com', 443
+=> #&lt;TCPSocket:fd 5&gt;
+>> ssl_context = OpenSSL::SSL::SSLContext.new
+=> #&lt;OpenSSL::SSL::SSLContext:0x00000000fcf918&gt;
+>> ssl_context.set_params
+=> {:ssl_version=>"SSLv23", :verify_mode=>1, :ciphers=>"ALL:!ADH:!EXPORT:!SSLv2:RC4+RSA:+HIGH:+MEDIUM:+LOW", :options=>-2147480585}
+>> ssl_client = OpenSSL::SSL::SSLSocket.new tcp_client, ssl_context
+=> #&lt;OpenSSL::SSL::SSLSocket:0x0000000106a418&gt;
+>> ssl_client.connect
+=> #&lt;OpenSSL::SSL::SSLSocket:0x0000000106a418&gt;
+    </programlisting>
+    Note the call to <command>ssl_context.set_params</command>: by default, when context is created, all its instance variables are nil. Before using the context, <command>set_params</command> should be called to initialize them (when called without argument, default parameters are chosen). In case this call is omitted and variables are left uninitialized, certificate verification is not performed (effectively the same as <constant>VERIFY_NONE</constant> mode). Default parameters are stored in the constant:
+    <programlisting language="Ruby">
+>> OpenSSL::SSL::SSLContext::DEFAULT_PARAMS
+=> {:ssl_version=>"SSLv23", :verify_mode=>1, :ciphers=>"ALL:!ADH:!EXPORT:!SSLv2:RC4+RSA:+HIGH:+MEDIUM:+LOW", :options=>-2147480585}
+    </programlisting>
+    One of the side effects of <command>set_params</command> is that it also sets up certificate store with certificates from default certificate area (see <xref linkend='CertificateStore'/> below):
+    <programlisting language="Ruby">
+>> ssl_context.cert_store
+=> nil
+>> ssl_context.set_params
+=> {:ssl_version=>"SSLv23", :verify_mode=>1, :ciphers=>"ALL:!ADH:!EXPORT:!SSLv2:RC4+RSA:+HIGH:+MEDIUM:+LOW", :options=>-2147480585}
+>> ssl_context.cert_store
+=> #&lt;OpenSSL::X509::Store:0x00000000fea740&gt;
+    </programlisting>
+  </para>
+  <section id="CertificateStore">
+    <title>Certificate store</title>
+    <para>
+      Class <command>OpenSSL::X509::Store</command> implements certificate store in Ruby. Certificate store is similar to store in web browsers - it contains trusted certificates that can be used to verify certificate chain. When new certificate store is created, it contains no trusted certificates by default.
+    </para>
+    <para>
+      To populate certificate store with certificates, use one of methods:
+      <itemizedlist>
+        <listitem>
+          <para>
+            <command>Store#add_file</command> takes a path to DER/PEM encoded certificate
+          </para>
+        </listitem>
+        <listitem>
+          <para>
+            <command>Store#add_cert</command> takes instance of <constant>X509::Certificate</constant>
+          </para>
+        </listitem>
+        <listitem>
+          <para>
+            <command>Store#add_path</command> takes a path to a directory with trusted certificates
+          </para>
+        </listitem>
+        <listitem>
+          <para>
+            <command>Store#set_default_path</command> adds certificates stored in default certificate area
+          </para>
+        </listitem>
+      </itemizedlist>
+    </para>
+    <para>
+      OpenSSL installation usually creates a directory, which stores several trusted certificates (approach similar to web browsers, that also come with predefined certificate store). To populate certificate store with certificates that come with OpenSSL use <command>Store#set_default_path</command>. The path to default certificate area is defined as:
+      <programlisting language="Ruby">
+>> OpenSSL::X509::DEFAULT_CERT_AREA
+=> "/etc/pki/tls"
+      </programlisting>
+    </para>
+  </section>
+  <section>
+    <title>Ruby libraries using OpenSSL</title>
+    <para>
+      There are several libraries that build on top of OpenSSL. Depending on how a library uses <constant>SSLContext</constant>, users may encounter exception from OpenSSL code saying the certificate verification failed:
+      <programlisting language="Ruby">
+>> ssl_client.connect
+OpenSSL::SSL::SSLError: SSL_connect returned=1 errno=0 state=SSLv3 read server certificate B: certificate verify failed
+from (irb):7:in `connect'
+from (irb):7
+      </programlisting>
+      This usually happens when <constant>verify_mode</constant> is set to check the certificate, but the certificate store used does not contain trusted certificate required to verify the SSL sent by the server.
+    </para>
+    <note>
+      <para>
+        The worst advice that can be found on internet on how to fix SSL is to set 
+        <programlisting>
+OpenSSL::SSL::VERIFY_PEER = OpenSSL::SSL::VERIFY_NONE
+        </programlisting>
+        This redefines constant <constant>OpenSSL::SSL::VERIFY_PEER</constant> to have the same effect as <constant>OpenSSL::SSL::VERIFY_PEER</constant>, effectively globally disabling certificate checking. 
+      </para>
+    </note>
+    <para>
+      Take <constant>Net::IMAP</constant> as example (the code below refers to Ruby 1.9.3): initialize method for creating a new IMAP connection has takes the following arguments:
+      <programlisting language="Ruby">
+def initialize(host, port_or_options = {},
+            usessl = false, certs = nil, verify = true)
+        ...
+      </programlisting>
+      When SSL connection is used but <constant>certs</constant> and <constant>verify</constant> arguments are left to be assigned defaults values, SSLError may be thrown when certificate sent by server cannot be verified.
+    </para>
+    <important>
+      <para>
+        The correct solution is to always make sure certificate store used by <constant>SSLContext</constant> contains a trusted certificate that can be used to verify the certificate sent by the server.
+      </para>
+    </important>
+    <section>
+      <title>Behaviour in different Ruby versions</title>
+      <para>
+        Default behaviour differs across Ruby versions: in Ruby 1.8, SSL enabled libraries usually falled back to <constant>VERIFY_NONE</constant> mode. The above mentioned <constant>Net::IMAP#initialize</constant> looks like this:
+        <programlisting language="Ruby">
+def initialize(host, port = PORT, usessl = false, certs = nil, verify = false)
+        ...
+        </programlisting>
+        Starting from Ruby 1.9, standard library defaults to <constant>VERIFY_PEER</constant> mode. 
+      </para>
+    </section>
+  </section>
+</section>

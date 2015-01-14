@@ -1,0 +1,19 @@
+<?xml version='1.0' encoding='utf-8' ?>
+<!DOCTYPE chapter PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN" "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd" [
+<!ENTITY % BOOK_ENTITIES SYSTEM "Secure_Ruby_Development_Guide.ent">
+%BOOK_ENTITIES;
+]>
+
+<chapter>
+	<title>Environment</title>
+	<para>
+		Development environment can significantly affect quality and security of code
+		and investing certain effort into proper setup can result in saved development
+		time, better code coverage, more readable and secure code etc. In general,
+		automated checks provide a good baseline and are less prone to unintentional 
+		mistakes than developers.
+	</para>
+	<xi:include href="code_quality_metrics.xml" xmlns:xi="http://www.w3.org/2001/XInclude" />
+	<xi:include href="dependency_management.xml" xmlns:xi="http://www.w3.org/2001/XInclude" />
+	<xi:include href="static_code_analysis_with_brakeman.xml" xmlns:xi="http://www.w3.org/2001/XInclude" />
+</chapter>

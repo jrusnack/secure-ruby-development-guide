@@ -1,0 +1,49 @@
+<?xml version='1.0' encoding='utf-8' ?>
+<!DOCTYPE chapter PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN" "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd" [
+<!ENTITY % BOOK_ENTITIES SYSTEM "Secure_Ruby_Development_Guide.ent">
+%BOOK_ENTITIES;
+]>
+<section id="sect-Secure_Ruby_Development_Guide-Environment-Code_Quality_Metrics">
+	<title>Code quality metrics</title>
+	<para>
+		Security is just one aspect of code quality along with reliability, correctness
+and others. These metrics overlap a lot, for example denial of service can be
+seen as both security and reliability issue. Therefore improvement in any of
+these areas is likely to affect others.
+	</para>
+	<para>
+		Increasing code quality by reducing complexity, duplication of code and
+mainaining good readability is a good first step towards security. All other things 
+being equal, more complex code will have more weaknesses than simpler one.
+	</para>
+	<para>
+		Several gems can help with improving code quality:
+	</para>
+	<itemizedlist>
+		<listitem>
+    <para>
+    	<ulink url="https://github.com/railsbp/rails_best_practices">Rails Best Practices</ulink>
+    	is a popular gem among rails developers and new checks are implemented based on voting of community.
+  	</para>
+  </listitem>
+  <listitem>
+    <para>
+    	<ulink url="https://github.com/bbatsov/rubocop">rubocop</ulink>
+    	is a style checker and implements vast amount of checks based on 
+				<ulink url="https://github.com/bbatsov/ruby-style-guide">Ruby Style Guide</ulink>
+    </para>
+  </listitem>
+  <listitem>
+  	<para>
+  		<ulink url="https://github.com/metricfu/metric_fu">metric_fu</ulink>
+  		combines several popular code metric tools like <ulink url="https://github.com/troessner/reek">Reek</ulink>, <ulink url="https://github.com/seattlerb/flog">Flog</ulink>, <ulink url="https://github.com/seattlerb/flay">Flay</ulink>, <ulink url="https://github.com/square/cane">Cane</ulink> etc.
+  	</para>
+  </listitem>
+	</itemizedlist>
+
+	<para>
+		These are just few examples and actual setup may vary from project to project.
+		However, they help developers keep code complexity low in an automated fashion
+		and can be easily integrated into workflow. 
+	</para>
+</section>

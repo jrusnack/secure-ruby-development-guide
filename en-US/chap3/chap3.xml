@@ -3,6 +3,7 @@
 <!ENTITY % BOOK_ENTITIES SYSTEM "Secure_Ruby_Development_Guide.ent">
 %BOOK_ENTITIES;
 ]>
+
 <chapter>
   <title>Web Application Security</title>
   <para>
@@ -13,40 +14,6 @@
     Ruby on Rails as a popular web framework already helps with a web application security by providing secure defaults, useful helper methods, automatic html escaping etc. 
   </para>
 
-  <!-- <section>
-    <title>Authentication and session management</title>
-    <para>
-      
-    </para>
-  </section>
-
-  <section>
-    <title>Authorization and user management</title>
-    <para>
-      
-    </para>
-  </section> -->
-
-  <xi:include href="Chapter3-Common_attacks_and_mitigations.xml" xmlns:xi="http://www.w3.org/2001/XInclude" />
-  <xi:include href="Chapter3-Client_side_security.xml" xmlns:xi="http://www.w3.org/2001/XInclude" />
-
-  <!-- <section>
-    <title>Application and server configuration and hardening</title>
-    <section>
-      <title>Logging</title>
-      <para></para>
-    </section>
-
-    <section>
-      <title>User content storage</title>
-      <para></para>
-    </section>
-
-    <section>
-      <title>Storing passwords securely</title>
-      <para></para>
-    </section>
-  </section> -->
-
-
+	<xi:include href="common_attacks.xml" xmlns:xi="http://www.w3.org/2001/XInclude" />
+	<xi:include href="client_side_security.xml" xmlns:xi="http://www.w3.org/2001/XInclude" />
 </chapter>
