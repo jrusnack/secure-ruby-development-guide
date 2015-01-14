@@ -230,17 +230,93 @@ http://vulnerable.com/#&lt;script&gt;alert('Hello')&lt;/script&gt;
 
     <section>
       <title>XSS protection in Rails</title>
-      <para></para>
+      <para>
+        In past Ruby on Rails required developers to explicity escape any potentially unsafe strings with <code>html_escape()</code> method (or alias <code>h()</code>). This is methodically bad approach to security, since any omission of the method on critical place lead to potentiall exploitable weakness. 
+      </para>
+      <para>
+        Since Rails 3 instead or relying on developer to provide html escaped output Rails automatically escapes everything. This is implemented in <code>ActiveSupport::SafeBuffer</code> class, which extends String and represents escaped (i.e. html safe) version of a string. The most important aspect of SafeBuffer is that it stays html safe even when standard String methods are called with unsafe inputs:
+      </para>
+
+      <programlisting language="Ruby">
+&gt; sb = ActiveSupport::SafeBuffer.new
+ =&gt; "" 
+&gt; sb &lt;&lt; "&lt;string&gt;"
+ =&gt; "&amp;lt;string&amp;gt;"
+&gt; sb + "&lt;/string&gt;"
+ =&gt; "&amp;lt;string&amp;gt;&amp;lt;/string&amp;gt;"
+      </programlisting>
+
+      <para>
+        This way a response to the client can be built part by part without allowing unsafe characters. If a string is safe and can be rendered without escaping, developer has to mark it html safe explicitly using <code>html_safe</code> method. This method actually returns an instance of SafeBuffer:
+      </para>
+      <programlisting language="Ruby">
+&gt; safe =  "  &lt;b&gt;HTML safe&lt;/b&gt; string".html_safe
+ =&gt; "  &lt;b&gt;HTML safe&lt;/b&gt; string" 
+&gt; safe.class
+ =&gt; ActiveSupport::SafeBuffer 
+&gt; sb &lt;&lt; safe
+ =&gt; "&amp;lt;string&amp;gt;&amp;lt;/string&amp;gt;  &lt;b&gt;HTML safe&lt;/b&gt; string" 
+
+      </programlisting>
     </section>
 
     <section>
       <title>Real world examples</title>
-      <para></para>
+      <para>
+        With automatic escaping of output XSS vulnerabilities in Rails are much less common, but still occur. One common cause is misuse of <code>html_safe()</code> on untrusted strings. Example of this is CVE-2014-3531: XSS flaw in operating system name/description in Foreman. Weakness in this case was present in helper method, which returned name of the OS:
+      </para>
+
+      <programlisting language="Ruby">
+def os_name record, opts = {}
+  "#{icon(record, opts)} #{record.to_label}".html_safe
+end
+      </programlisting>
+
+      <para>
+        The first part of string, <code>icon(record, opts)</code> returns html safe string, but second part is untrusted and may contain html unsafe characters. Calling <code>html_safe</code> on the resulting String caused vulnerability and the fix was straightforward:
+      </para>
+
+      <programlisting language="Ruby">
+def os_name record, opts = {}
+  icon(record, opts).html_safe &lt;&lt; record.to_label
+end
+      </programlisting>
+
+      <para>
+        Another way to create XSS vulnerability in Rails is to bypass the automatic ERB escaping by rendering response directly. Example of this is CVE-2014-3492: XSS from stored YAML in Foreman. Vulnerable code serialized untrusted data into YAML and directly rendered it on page as preview:
+      </para>
+
+      <programlisting>
+begin
+  respond_to do |format|
+    format.html { render :text => "&lt;pre&gt;#{@host.info.to_yaml}&lt;/pre&gt;" }
+    format.yml { render :text => @host.info.to_yaml }
+  end
+rescue
+...
+      </programlisting>
+
+      <para>
+        In this case output has to be explicitly escaped before returning to the client:
+      </para>
+
+      <programlisting>
+begin
+  respond_to do |format|
+    format.html { render :text => "&lt;pre&gt;#{ERB::Util.html_escape(@host.info.to_yaml)}&lt;/pre&gt;" }
+    format.yml { render :text => @host.info.to_yaml }
+  end
+rescue
+...
+      </programlisting>
     </section>
 
     <section>
       <title>References</title>
       <itemizedlist>
+        <listitem>
+          <para>Ruby on Rails Security Guide - Cross-site Scripting: <ulink url="http://guides.rubyonrails.org/security.html#cross-site-scripting-xss">http://guides.rubyonrails.org/security.html#cross-site-scripting-xss</ulink></para>
+        </listitem>
         <listitem>
           <para>OWASP - Cross-site Scripting: <ulink url="https://www.owasp.org/index.php/Cross-site_Scripting_%28XSS%29">https://www.owasp.org/index.php/Cross-site_Scripting_%28XSS%29</ulink></para>
         </listitem>
