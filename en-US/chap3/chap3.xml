@@ -14,6 +14,9 @@
     Ruby on Rails as a popular web framework already helps with a web application security by providing secure defaults, useful helper methods, automatic html escaping etc. 
   </para>
 
+  	<!-- Authentication and session management -->
+  	<!-- Authorization and user management -->
 	<xi:include href="common_attacks.xml" xmlns:xi="http://www.w3.org/2001/XInclude" />
 	<xi:include href="client_side_security.xml" xmlns:xi="http://www.w3.org/2001/XInclude" />
+	<xi:include href="server_hardening.xml" xmlns:xi="http://www.w3.org/2001/XInclude" />
 </chapter>

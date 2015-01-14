@@ -510,6 +510,34 @@ end
 
   <section>
     <title>Guidelines and principles</title>
-    <para></para>
+    <para>Following are general recommendations based on previous sections:</para>
+    <para>
+      <variablelist>
+        <varlistentry>
+          <term>Always make sure output sent to client is escaped correctly</term>
+          <listitem>
+            <para>
+              Automatic ERB escaping in Rails works in most cases, however, developers should still be careful about rendering untrusted data directly to user or misusing <code>html_safe</code>.
+            </para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term>Always make sure command arguments send to components (shell, database) are escaped or trusted</term>
+          <listitem>
+            <para>
+              Command injection is one of the most understood and best studied attack vectors. Ruby on Rails provides good defense against SQL injection, however developers should be always careful when executing OS command with potentiall untrusted arguments.
+            </para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term>Verify routing exposes actions through expected HTTP verbs</term>
+          <listitem>
+            <para>
+              An important part of protecting agains CSRF attacks is to make sure actions reachable through HTTP GET do not have side effects. This is something to think about from the very beginning, since cleaning up routing later into development cycle tends to be intrusive and complex.
+            </para>
+          </listitem>
+        </varlistentry>
+      </variablelist>
+    </para>
   </section>
 </section>
