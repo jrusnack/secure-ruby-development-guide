@@ -1,0 +1,84 @@
+<?xml version='1.0' encoding='utf-8' ?>
+<!DOCTYPE chapter PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN" "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd" [
+<!ENTITY % BOOK_ENTITIES SYSTEM "Secure_Ruby_Development_Guide.ent">
+%BOOK_ENTITIES;
+]>
+
+<section>
+  <title>Application server configuration and hardening</title>
+  <para>
+  	Defense in depth approach to security reminds us to add layers of security further down the stack, rather than focus on the interface between client and the server. 
+  </para>
+
+  <para>
+    This section lists common problems related to server configuration and hardening with examples of vulnerabilities together with best practices on how to avoid them.
+  </para>
+
+  <section>
+  	<title>Logging</title>
+  	<para>
+  		Logging is another surprising attack vector for the attackers. Logs are used to collect information about the state of the system, used by administrators in decisions about the system configuration and, in case of machine compromise, post hoc analysis. In both cases it is important that logs contain correct and accurate information. To achieve this, application developers tend to log various inputs to the application, which helps with debugging the problems, but creates opportunity for the attacker to forge logs.
+  	</para>
+
+    <para>Prerequisite for log forging is pasting potentiall untrusted unescaped input directly into logs as part of the logged message. Ability to include special characters such as newline is often enough to create false log messages. Example of this kind of vulnerability is CVE-2014-0136 CFME: AgentController get/log application log forging. The vulnerable part of code was
+    </para>
+
+    <programlisting language="Ruby">
+$log.info "MIQ(agent-get): Request agent update for Proxy id [#{params[:id]}]"
+    </programlisting>
+
+    <para>
+      The application logged the ID of proxy that was requested as-is, taken from the parameters supplied by the client. If the ID parameter looked like this ("%0A" is percent encoded line feed)
+    </para>
+
+    <programlisting>
+1%0AMIQ(agent-get): Agent shutdown
+    </programlisting>
+
+    <para>
+      then logs would contain two messages, one logged by the agent, one specified by the attacker:
+    </para>
+
+    <programlisting>
+MIQ(agent-get): Request agent update for Proxy id 1
+MIQ(agent-get): Agent shutdown
+    </programlisting>
+
+    <para>
+      This example is simplified by omitting details like timestamps from logs, which are not secret and attacker would be able to spoof them, too.
+    </para>
+
+    <para>
+      Perhaps slightly surprising consequence of logging unescaped characters is the potential to "delete" or "modify" the existing log messages, using backspace control character. Of course, the existing log messages would be intact, but the backspace control characters would alter existing messages when viewed in text editor. If the ID parameter contained backspace characters:
+    </para>
+
+    <programlisting>
+%08%08%08%08%08%08%08%08%08Server id 7
+    </programlisting>
+
+    <para>
+      so the log stored on disk would contain
+    </para>
+
+    <programlisting>
+MIQ(agent-get): Request agent update for Proxy id %08%08%08%08%08%08%08%08%08Server id 7
+    </programlisting>
+    
+    <para>
+      If this log was opened in text viewer, such as lsess, control sequences would be interpreted and the administrator would see
+    </para>
+
+    <programlisting>
+MIQ(agent-get): Request agent update for Server id 7
+    </programlisting>
+
+    <important>
+      <para>
+        Always make sure potentially untrusted input is escaped before being logged and make sure user supplied input is quickly recognizable and cannot be confused with data such as logged messages, timestamps etc.
+      </para>
+    </important>
+  </section>
+
+  <!-- User content storage -->
+  <!-- Storing passwords securely -->
+</section>
