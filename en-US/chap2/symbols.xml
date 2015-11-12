@@ -11,7 +11,7 @@
   </para>
   <para>
     Application developers should be careful when calling <command>to_sym</command> or <command>intern</command> on user-supplied strings. Additionally, other methods may convert supplied arguments to symbols internally, for example <command>Object.send</command>, <command>Object.instance_variable_set</command>, <command>Object.instance_variable_get</command>, <command>Module.const_get</command> or <command>Module.const_set</command>:
-    
+
     <programlisting language="Ruby">
 >> Symbol.all_symbols.size
 => 2956
@@ -35,6 +35,6 @@ NameError: uninitialized constant Module::MY_SYMBOL
   </para>
 
     <para>
-      Ruby 2.2 <ulink url="https://www.ruby-lang.org/en/news/2014/12/25/ruby-2-2-0-released/">released 25th of Dec 2014</ulink> includes substantial improvements to it`s garbage collector, on of which is ability to garbage collect Symbols. This solves denial of service problems with Symbols present in previous versions of Ruby.
+      Ruby 2.2 <ulink url="https://www.ruby-lang.org/en/news/2014/12/25/ruby-2-2-0-released/">released 25th of Dec 2014</ulink> includes substantial improvements to its garbage collector, one of which is the ability to garbage collect Symbols. This solves denial of service problems with Symbols present in previous versions of Ruby.
     </para>
 </section>
