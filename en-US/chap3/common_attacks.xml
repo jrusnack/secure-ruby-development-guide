@@ -368,7 +368,7 @@ rescue
     </programlisting>
 
     <para>
-      browser will issue a HTTP GET request to victimbank.com with parameters supplied by the attacker. The browser does not know anything about the resource that is being requested by the attacker's site - whether it is malicious of harmless - and it requests the script from the specified URL. If the user is authenticated at that moment, browser will also include his credentials, so the request would look like this:
+      browser will issue a HTTP GET request to victimbank.com with parameters supplied by the attacker. The browser does not know anything about the resource that is being requested by the attacker's site - whether it is malicious or harmless - and it requests the script from the specified URL. If the user is authenticated at that moment, browser will also include his credentials, so the request would look like this:
     </para>
 
     <programlisting>
@@ -444,7 +444,7 @@ end
         If this does not effectively log out user due to application-specific behaviour, developers should redefine <constant>handle_unverified_token</constant>.
       </para>
       <para>
-        The disadvantage of synchronizer token pattern is the need to rememnber the challenge token for each session on the server side.
+        The disadvantage of synchronizer token pattern is the need to remember the challenge token for each session on the server side.
       </para>
     </section>
     <section>
